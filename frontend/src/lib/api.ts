@@ -1,3 +1,16 @@
+import type {
+  Team,
+  TeamDetail,
+  Event,
+  EventDetail,
+  MatchSummary,
+  MatchDetail,
+  RankingEntry,
+  TeamEloHistory,
+  RobotRating,
+  PaginatedResponse,
+} from "@/types";
+
 const BASE_URL = "/api";
 
 async function fetchJSON<T>(path: string, params?: Record<string, string>): Promise<T> {
@@ -15,17 +28,36 @@ async function fetchJSON<T>(path: string, params?: Record<string, string>): Prom
 export const api = {
   health: () => fetchJSON<{ status: string; database: string }>("/health"),
 
-  events: (params?: Record<string, string>) =>
-    fetchJSON<any[]>("/events", params),
+  events: {
+    list: (params?: Record<string, string>) =>
+      fetchJSON<PaginatedResponse<Event>>("/events", params),
+    get: (id: string) =>
+      fetchJSON<EventDetail>(`/events/${id}`),
+  },
 
-  matches: (params?: Record<string, string>) =>
-    fetchJSON<any[]>("/matches", params),
+  matches: {
+    list: (params?: Record<string, string>) =>
+      fetchJSON<PaginatedResponse<MatchSummary>>("/matches", params),
+    get: (id: string) =>
+      fetchJSON<MatchDetail>(`/matches/${id}`),
+  },
 
-  teams: (params?: Record<string, string>) =>
-    fetchJSON<any[]>("/teams", params),
+  teams: {
+    list: (params?: Record<string, string>) =>
+      fetchJSON<PaginatedResponse<Team>>("/teams", params),
+    get: (id: string) =>
+      fetchJSON<TeamDetail>(`/teams/${id}`),
+  },
 
-  rankings: () => fetchJSON<any[]>("/rankings"),
+  rankings: {
+    list: (params?: Record<string, string>) =>
+      fetchJSON<PaginatedResponse<RankingEntry>>("/rankings", params),
+    history: (teamId: string, params?: Record<string, string>) =>
+      fetchJSON<TeamEloHistory[]>(`/rankings/${teamId}/history`, params),
+  },
 
-  stats: (params?: Record<string, string>) =>
-    fetchJSON<any[]>("/stats/robots", params),
+  stats: {
+    robots: (params?: Record<string, string>) =>
+      fetchJSON<PaginatedResponse<RobotRating>>("/stats/robots", params),
+  },
 };
