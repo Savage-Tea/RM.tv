@@ -7,3 +7,5 @@ pub mod round_robin;
 pub mod swiss;
 pub mod elimination;
 pub mod progression;
+pub mod elo_service;
+pub mod rating_service;
