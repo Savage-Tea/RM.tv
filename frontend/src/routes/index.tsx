@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { MatchSummary, RankingEntry } from "@/types";
 import { Link } from "@tanstack/react-router";
 import { Calendar, Trophy, Activity, ArrowRight } from "lucide-react";
 
