@@ -1,0 +1,19 @@
+[Unit]
+Description=RM.tv Backend API
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=rmtv
+Group=rmtv
+WorkingDirectory=/opt/rmtv
+ExecStart=/opt/rmtv/rmtv-backend
+Restart=always
+RestartSec=5
+EnvironmentFile=/opt/rmtv/.env
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

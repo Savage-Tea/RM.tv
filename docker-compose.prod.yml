@@ -1,0 +1,54 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: rmtv-db
+    restart: always
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER:-rmtv}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-rmtv}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-rmtv}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rmtv-backend
+    restart: always
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      DATABASE_URL: postgres://${DB_USER:-rmtv}:${DB_PASSWORD}@db:5432/${DB_NAME:-rmtv}
+      RUST_LOG: ${RUST_LOG:-info}
+      JWT_SECRET: ${JWT_SECRET}
+      API_HOST: 0.0.0.0
+      API_PORT: 3000
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://rmtv.local}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rmtv-frontend
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./ssl:/etc/ssl:ro
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
