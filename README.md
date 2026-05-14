@@ -1,5 +1,5 @@
 # RM.tv —— Robomaster相关数据统计网站
-> 本项目启发自hltv.com, CS：GO & CS2数据统计网站。
+> 本项目启发自hltv.org, CS：GO & CS2数据统计网站。
 
 ## 网站功能
 ### 赛事
