@@ -19,3 +19,6 @@ async-trait = "0.1"
 validator = { version = "0.18", features = ["derive"] }
 anyhow = "1"
 thiserror = "1"
+jsonwebtoken = "9"
+argon2 = "0.5"
+axum-extra = { version = "0.9", features = ["cookie"] }

@@ -1,7 +1,35 @@
+use chrono::{DateTime, Utc};
+use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 use crate::error::AppError;
 use crate::models::{Match, MatchMap, MatchParticipant, MapRobotStats, MatchDetail, MatchSummary, PaginatedResponse};
+
+#[derive(Deserialize)]
+pub struct CreateMatchInput {
+    pub event_id: Uuid,
+    pub stage_id: Option<Uuid>,
+    pub team_a_id: Uuid,
+    pub team_b_id: Uuid,
+    pub format: Option<String>,
+    pub scheduled_at: Option<DateTime<Utc>>,
+    pub bracket_position: Option<String>,
+    pub round: Option<i32>,
+    pub group_name: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateMatchInput {
+    pub score_a: Option<i32>,
+    pub score_b: Option<i32>,
+    pub status: Option<String>,
+    pub scheduled_at: Option<DateTime<Utc>>,
+    pub started_at: Option<DateTime<Utc>>,
+    pub finished_at: Option<DateTime<Utc>>,
+    pub bracket_position: Option<String>,
+    pub round: Option<i32>,
+    pub group_name: Option<String>,
+}
 
 pub async fn list_matches(
     pool: &PgPool,
@@ -97,4 +125,47 @@ pub async fn get_match(pool: &PgPool, id: Uuid) -> Result<MatchDetail, AppError>
     }
 
     Ok(MatchDetail { match_data, maps, participants, robot_stats })
+}
+
+pub async fn create_match(pool: &PgPool, input: CreateMatchInput) -> Result<Match, AppError> {
+    let m: Match = sqlx::query_as(
+        "INSERT INTO matches (event_id, stage_id, team_a_id, team_b_id, format, scheduled_at, bracket_position, round, group_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *"
+    )
+    .bind(input.event_id)
+    .bind(input.stage_id)
+    .bind(input.team_a_id)
+    .bind(input.team_b_id)
+    .bind(input.format.as_deref().unwrap_or("bo3"))
+    .bind(input.scheduled_at)
+    .bind(&input.bracket_position)
+    .bind(input.round)
+    .bind(&input.group_name)
+    .fetch_one(pool)
+    .await?;
+    Ok(m)
+}
+
+pub async fn update_match(pool: &PgPool, id: Uuid, input: UpdateMatchInput) -> Result<Match, AppError> {
+    let existing: Match = sqlx::query_as("SELECT * FROM matches WHERE id = $1")
+        .bind(id)
+        .fetch_optional(pool)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Match not found".into()))?;
+
+    let m: Match = sqlx::query_as(
+        "UPDATE matches SET score_a = $1, score_b = $2, status = $3, scheduled_at = $4, started_at = $5, finished_at = $6, bracket_position = $7, round = $8, group_name = $9 WHERE id = $10 RETURNING *"
+    )
+    .bind(input.score_a.or(existing.score_a))
+    .bind(input.score_b.or(existing.score_b))
+    .bind(input.status.as_deref().unwrap_or(&existing.status))
+    .bind(input.scheduled_at.or(existing.scheduled_at))
+    .bind(input.started_at.or(existing.started_at))
+    .bind(input.finished_at.or(existing.finished_at))
+    .bind(input.bracket_position.as_deref().or(existing.bracket_position.as_deref()))
+    .bind(input.round.or(existing.round))
+    .bind(input.group_name.as_deref().or(existing.group_name.as_deref()))
+    .bind(id)
+    .fetch_one(pool)
+    .await?;
+    Ok(m)
 }

@@ -1,7 +1,30 @@
+use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 use crate::error::AppError;
 use crate::models::{Team, TeamDetail, TeamMember, TeamMemberWithRoles, MemberRobotRole, PaginatedResponse};
+
+#[derive(Deserialize)]
+pub struct CreateTeamInput {
+    pub name: String,
+    pub name_en: Option<String>,
+    pub university: String,
+    pub abbreviation: Option<String>,
+    pub logo_url: Option<String>,
+    pub founded_year: Option<i32>,
+    pub description: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateTeamInput {
+    pub name: Option<String>,
+    pub name_en: Option<String>,
+    pub university: Option<String>,
+    pub abbreviation: Option<String>,
+    pub logo_url: Option<String>,
+    pub founded_year: Option<i32>,
+    pub description: Option<String>,
+}
 
 pub async fn list_teams(
     pool: &PgPool,
@@ -82,4 +105,43 @@ pub async fn get_team(pool: &PgPool, id: Uuid) -> Result<TeamDetail, AppError> {
         team,
         members: members_with_roles,
     })
+}
+
+pub async fn create_team(pool: &PgPool, input: CreateTeamInput) -> Result<Team, AppError> {
+    let team: Team = sqlx::query_as(
+        "INSERT INTO teams (name, name_en, university, abbreviation, logo_url, founded_year, description) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *"
+    )
+    .bind(&input.name)
+    .bind(&input.name_en)
+    .bind(&input.university)
+    .bind(&input.abbreviation)
+    .bind(&input.logo_url)
+    .bind(input.founded_year)
+    .bind(&input.description)
+    .fetch_one(pool)
+    .await?;
+    Ok(team)
+}
+
+pub async fn update_team(pool: &PgPool, id: Uuid, input: UpdateTeamInput) -> Result<Team, AppError> {
+    let existing: Team = sqlx::query_as("SELECT * FROM teams WHERE id = $1")
+        .bind(id)
+        .fetch_optional(pool)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Team not found".into()))?;
+
+    let team: Team = sqlx::query_as(
+        "UPDATE teams SET name = $1, name_en = $2, university = $3, abbreviation = $4, logo_url = $5, founded_year = $6, description = $7, updated_at = now() WHERE id = $8 RETURNING *"
+    )
+    .bind(input.name.as_deref().unwrap_or(&existing.name))
+    .bind(input.name_en.as_deref().or(existing.name_en.as_deref()))
+    .bind(input.university.as_deref().unwrap_or(&existing.university))
+    .bind(input.abbreviation.as_deref().or(existing.abbreviation.as_deref()))
+    .bind(input.logo_url.as_deref().or(existing.logo_url.as_deref()))
+    .bind(input.founded_year.or(existing.founded_year))
+    .bind(input.description.as_deref().or(existing.description.as_deref()))
+    .bind(id)
+    .fetch_one(pool)
+    .await?;
+    Ok(team)
 }

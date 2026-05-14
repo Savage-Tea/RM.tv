@@ -1,7 +1,8 @@
-use axum::Router;
+use axum::{Extension, Router};
 use tower_http::{cors::CorsLayer, trace::TraceLayer, limit::RequestBodyLimitLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
+mod auth;
 mod config;
 mod db;
 mod error;
@@ -24,6 +25,7 @@ async fn main() -> anyhow::Result<()> {
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
         .layer(RequestBodyLimitLayer::new(10 * 1024 * 1024)) // 10MB
+        .layer(Extension(config.clone()))
         .with_state(pool);
 
     let addr = format!("{}:{}", config.api_host, config.api_port);
