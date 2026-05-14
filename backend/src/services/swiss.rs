@@ -85,13 +85,8 @@ pub fn generate_pairings(
 
 /// Compute Buchholz score for each team.
 /// Buchholz = sum of all opponents' wins.
-pub fn compute_buchholz(
-    standings: &[SwissStanding],
-    matches: &[SwissMatch],
-) -> HashMap<Uuid, f64> {
-    let wins: HashMap<Uuid, i32> = standings.iter()
-        .map(|s| (s.team_id, s.wins))
-        .collect();
+pub fn compute_buchholz(standings: &[SwissStanding], matches: &[SwissMatch]) -> HashMap<Uuid, f64> {
+    let wins: HashMap<Uuid, i32> = standings.iter().map(|s| (s.team_id, s.wins)).collect();
 
     let mut buchholz: HashMap<Uuid, f64> = HashMap::new();
     for s in standings {
@@ -118,7 +113,8 @@ pub fn compute_final_standings(
     let buchholz = compute_buchholz(&standings, matches);
 
     standings.sort_by(|a, b| {
-        b.points.cmp(&a.points)
+        b.points
+            .cmp(&a.points)
             .then_with(|| {
                 let bh_a = buchholz.get(&a.team_id).copied().unwrap_or(0.0);
                 let bh_b = buchholz.get(&b.team_id).copied().unwrap_or(0.0);
@@ -161,10 +157,16 @@ mod tests {
 
     #[test]
     fn test_pairings_no_rematch() {
-        let standings: Vec<SwissStanding> = (1..=8).map(|i| SwissStanding {
-            team_id: tid(&format!("t{}", i)),
-            wins: 0, losses: 0, map_wins: 0, map_losses: 0, points: 0,
-        }).collect();
+        let standings: Vec<SwissStanding> = (1..=8)
+            .map(|i| SwissStanding {
+                team_id: tid(&format!("t{}", i)),
+                wins: 0,
+                losses: 0,
+                map_wins: 0,
+                map_losses: 0,
+                points: 0,
+            })
+            .collect();
 
         let pairings = generate_pairings(&standings, 1, &HashSet::new());
         assert_eq!(pairings.len(), 4);
@@ -178,10 +180,38 @@ mod tests {
         let t4 = tid("t4");
 
         let standings = vec![
-            SwissStanding { team_id: t1, wins: 1, losses: 0, map_wins: 2, map_losses: 0, points: 3 },
-            SwissStanding { team_id: t2, wins: 1, losses: 0, map_wins: 2, map_losses: 1, points: 3 },
-            SwissStanding { team_id: t3, wins: 0, losses: 1, map_wins: 1, map_losses: 2, points: 0 },
-            SwissStanding { team_id: t4, wins: 0, losses: 1, map_wins: 0, map_losses: 2, points: 0 },
+            SwissStanding {
+                team_id: t1,
+                wins: 1,
+                losses: 0,
+                map_wins: 2,
+                map_losses: 0,
+                points: 3,
+            },
+            SwissStanding {
+                team_id: t2,
+                wins: 1,
+                losses: 0,
+                map_wins: 2,
+                map_losses: 1,
+                points: 3,
+            },
+            SwissStanding {
+                team_id: t3,
+                wins: 0,
+                losses: 1,
+                map_wins: 1,
+                map_losses: 2,
+                points: 0,
+            },
+            SwissStanding {
+                team_id: t4,
+                wins: 0,
+                losses: 1,
+                map_wins: 0,
+                map_losses: 2,
+                points: 0,
+            },
         ];
 
         let mut history = HashSet::new();

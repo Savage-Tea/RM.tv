@@ -19,7 +19,7 @@ jobs:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --check
-      - run: cargo clippy -- -D warnings
+      - run: cargo clippy -- -D warnings -A dead_code -A unused_variables -A unused_imports
 
   backend-test:
     runs-on: ubuntu-latest

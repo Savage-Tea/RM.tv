@@ -10,6 +10,11 @@ pub struct PaginatedResponse<T: Serialize> {
 
 impl<T: Serialize> PaginatedResponse<T> {
     pub fn new(data: Vec<T>, total: i64, page: i64, per_page: i64) -> Self {
-        Self { data, total, page, per_page }
+        Self {
+            data,
+            total,
+            page,
+            per_page,
+        }
     }
 }

@@ -1,14 +1,14 @@
-use axum::{
-    extract::{Path, Query, State},
-    Json, Router,
-};
-use axum::routing::get;
-use serde::Deserialize;
-use uuid::Uuid;
 use crate::db::Pool;
 use crate::error::AppError;
 use crate::models::{Event, EventDetail, PaginatedResponse};
 use crate::services::event_service;
+use axum::routing::get;
+use axum::{
+    Json, Router,
+    extract::{Path, Query, State},
+};
+use serde::Deserialize;
+use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct ListEventsQuery {
@@ -32,7 +32,8 @@ async fn list_events(
         params.per_page.unwrap_or(20),
         params.sort.as_deref().unwrap_or("start_date"),
         params.order.as_deref().unwrap_or("desc"),
-    ).await?;
+    )
+    .await?;
     Ok(Json(result))
 }
 

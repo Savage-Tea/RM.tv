@@ -1,9 +1,9 @@
+use crate::error::AppError;
+use crate::models::{Event, EventDetail, EventEntry, EventStage, PaginatedResponse};
 use chrono::NaiveDate;
 use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::error::AppError;
-use crate::models::{Event, EventStage, EventEntry, EventDetail, PaginatedResponse};
 
 #[derive(Deserialize)]
 pub struct CreateEventInput {
@@ -57,14 +57,20 @@ pub async fn list_events(
         "created_at" => "created_at",
         _ => "start_date",
     };
-    let sort_order = if order.eq_ignore_ascii_case("asc") { "ASC" } else { "DESC" };
+    let sort_order = if order.eq_ignore_ascii_case("asc") {
+        "ASC"
+    } else {
+        "DESC"
+    };
 
     let (total, events) = match (season, status) {
         (Some(s), Some(st)) => {
-            let total: (i64,) = sqlx::query_as(
-                "SELECT COUNT(*) FROM events WHERE season = $1 AND status = $2"
-            )
-            .bind(s).bind(st).fetch_one(pool).await?;
+            let total: (i64,) =
+                sqlx::query_as("SELECT COUNT(*) FROM events WHERE season = $1 AND status = $2")
+                    .bind(s)
+                    .bind(st)
+                    .fetch_one(pool)
+                    .await?;
 
             let events: Vec<Event> = sqlx::query_as(&format!(
                 "SELECT * FROM events WHERE season = $1 AND status = $2 ORDER BY {} {} LIMIT $3 OFFSET $4",
@@ -76,45 +82,54 @@ pub async fn list_events(
             (total.0, events)
         }
         (Some(s), None) => {
-            let total: (i64,) = sqlx::query_as(
-                "SELECT COUNT(*) FROM events WHERE season = $1"
-            )
-            .bind(s).fetch_one(pool).await?;
+            let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM events WHERE season = $1")
+                .bind(s)
+                .fetch_one(pool)
+                .await?;
 
             let events: Vec<Event> = sqlx::query_as(&format!(
                 "SELECT * FROM events WHERE season = $1 ORDER BY {} {} LIMIT $2 OFFSET $3",
                 sort_col, sort_order
             ))
-            .bind(s).bind(per_page).bind(offset)
-            .fetch_all(pool).await?;
+            .bind(s)
+            .bind(per_page)
+            .bind(offset)
+            .fetch_all(pool)
+            .await?;
 
             (total.0, events)
         }
         (None, Some(st)) => {
-            let total: (i64,) = sqlx::query_as(
-                "SELECT COUNT(*) FROM events WHERE status = $1"
-            )
-            .bind(st).fetch_one(pool).await?;
+            let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM events WHERE status = $1")
+                .bind(st)
+                .fetch_one(pool)
+                .await?;
 
             let events: Vec<Event> = sqlx::query_as(&format!(
                 "SELECT * FROM events WHERE status = $1 ORDER BY {} {} LIMIT $2 OFFSET $3",
                 sort_col, sort_order
             ))
-            .bind(st).bind(per_page).bind(offset)
-            .fetch_all(pool).await?;
+            .bind(st)
+            .bind(per_page)
+            .bind(offset)
+            .fetch_all(pool)
+            .await?;
 
             (total.0, events)
         }
         (None, None) => {
             let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM events")
-                .fetch_one(pool).await?;
+                .fetch_one(pool)
+                .await?;
 
             let events: Vec<Event> = sqlx::query_as(&format!(
                 "SELECT * FROM events ORDER BY {} {} LIMIT $1 OFFSET $2",
                 sort_col, sort_order
             ))
-            .bind(per_page).bind(offset)
-            .fetch_all(pool).await?;
+            .bind(per_page)
+            .bind(offset)
+            .fetch_all(pool)
+            .await?;
 
             (total.0, events)
         }
@@ -130,21 +145,24 @@ pub async fn get_event(pool: &PgPool, id: Uuid) -> Result<EventDetail, AppError>
         .await?
         .ok_or_else(|| AppError::NotFound("Event not found".into()))?;
 
-    let stages: Vec<EventStage> = sqlx::query_as(
-        "SELECT * FROM event_stages WHERE event_id = $1 ORDER BY order_index"
-    )
-    .bind(id)
-    .fetch_all(pool)
-    .await?;
+    let stages: Vec<EventStage> =
+        sqlx::query_as("SELECT * FROM event_stages WHERE event_id = $1 ORDER BY order_index")
+            .bind(id)
+            .fetch_all(pool)
+            .await?;
 
     let entries: Vec<EventEntry> = sqlx::query_as(
-        "SELECT * FROM event_entries WHERE event_id = $1 ORDER BY seed ASC NULLS LAST"
+        "SELECT * FROM event_entries WHERE event_id = $1 ORDER BY seed ASC NULLS LAST",
     )
     .bind(id)
     .fetch_all(pool)
     .await?;
 
-    Ok(EventDetail { event, stages, entries })
+    Ok(EventDetail {
+        event,
+        stages,
+        entries,
+    })
 }
 
 pub async fn create_event(pool: &PgPool, input: CreateEventInput) -> Result<Event, AppError> {
@@ -164,7 +182,11 @@ pub async fn create_event(pool: &PgPool, input: CreateEventInput) -> Result<Even
     Ok(event)
 }
 
-pub async fn update_event(pool: &PgPool, id: Uuid, input: UpdateEventInput) -> Result<Event, AppError> {
+pub async fn update_event(
+    pool: &PgPool,
+    id: Uuid,
+    input: UpdateEventInput,
+) -> Result<Event, AppError> {
     let existing: Event = sqlx::query_as("SELECT * FROM events WHERE id = $1")
         .bind(id)
         .fetch_optional(pool)
@@ -199,7 +221,11 @@ pub async fn delete_event(pool: &PgPool, id: Uuid) -> Result<(), AppError> {
     Ok(())
 }
 
-pub async fn create_stage(pool: &PgPool, event_id: Uuid, input: CreateStageInput) -> Result<EventStage, AppError> {
+pub async fn create_stage(
+    pool: &PgPool,
+    event_id: Uuid,
+    input: CreateStageInput,
+) -> Result<EventStage, AppError> {
     let event_exists: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM events WHERE id = $1")
         .bind(event_id)
         .fetch_one(pool)

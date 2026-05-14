@@ -1,16 +1,13 @@
-use axum::{
-    extract::State,
-    Extension, Json, Router,
-};
-use axum::routing::post;
-use axum_extra::extract::cookie::{Cookie, CookieJar};
-use serde::{Deserialize, Serialize};
-use serde_json::json;
-use uuid::Uuid;
 use crate::auth::{jwt, password};
 use crate::config::Config;
 use crate::db::Pool;
 use crate::error::AppError;
+use axum::routing::post;
+use axum::{Extension, Json, Router, extract::State};
+use axum_extra::extract::cookie::{Cookie, CookieJar};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use uuid::Uuid;
 
 #[derive(Deserialize)]
 struct LoginRequest {
@@ -43,12 +40,11 @@ async fn login(
     jar: CookieJar,
     Json(body): Json<LoginRequest>,
 ) -> Result<(CookieJar, Json<LoginResponse>), AppError> {
-    let user: Option<AdminUser> = sqlx::query_as(
-        "SELECT id, username, password_hash FROM admin_users WHERE username = $1"
-    )
-    .bind(&body.username)
-    .fetch_optional(&pool)
-    .await?;
+    let user: Option<AdminUser> =
+        sqlx::query_as("SELECT id, username, password_hash FROM admin_users WHERE username = $1")
+            .bind(&body.username)
+            .fetch_optional(&pool)
+            .await?;
 
     let user = match user {
         Some(u) => u,
@@ -79,7 +75,10 @@ async fn login(
         jar.add(refresh_cookie),
         Json(LoginResponse {
             access_token,
-            user: UserInfo { id: user.id, username: user.username },
+            user: UserInfo {
+                id: user.id,
+                username: user.username,
+            },
         }),
     ))
 }
@@ -100,10 +99,7 @@ async fn refresh(
     let new_access = jwt::encode_token(claims.sub, &claims.username, &config.jwt_secret, 15)
         .map_err(|e| AppError::Internal(format!("Token generation failed: {}", e)))?;
 
-    Ok((
-        jar,
-        Json(json!({ "access_token": new_access })),
-    ))
+    Ok((jar, Json(json!({ "access_token": new_access }))))
 }
 
 async fn logout(jar: CookieJar) -> (CookieJar, Json<serde_json::Value>) {
@@ -111,7 +107,10 @@ async fn logout(jar: CookieJar) -> (CookieJar, Json<serde_json::Value>) {
         .path("/api/auth")
         .http_only(true)
         .build();
-    (jar.remove(removal), Json(json!({ "message": "Logged out" })))
+    (
+        jar.remove(removal),
+        Json(json!({ "message": "Logged out" })),
+    )
 }
 
 pub fn routes() -> Router<Pool> {

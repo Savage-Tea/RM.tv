@@ -1,15 +1,15 @@
-use axum::{
-    extract::{Path, State},
-    Extension, Json, Router,
-};
-use axum::routing::{post, put};
-use uuid::Uuid;
 use crate::auth::middleware::require_auth;
 use crate::config::Config;
 use crate::db::Pool;
 use crate::error::AppError;
 use crate::models::Team;
 use crate::services::team_service::{self, CreateTeamInput, UpdateTeamInput};
+use axum::routing::{post, put};
+use axum::{
+    Extension, Json, Router,
+    extract::{Path, State},
+};
+use uuid::Uuid;
 
 async fn create_team(
     State(pool): State<Pool>,

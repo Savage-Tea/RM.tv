@@ -1,14 +1,10 @@
-use axum::{
-    extract::Query,
-    extract::State,
-    Json, Router,
-};
-use axum::routing::get;
-use serde::Deserialize;
 use crate::db::Pool;
 use crate::error::AppError;
-use crate::models::{RobotRating, PaginatedResponse};
+use crate::models::{PaginatedResponse, RobotRating};
 use crate::services::stats_service;
+use axum::routing::get;
+use axum::{Json, Router, extract::Query, extract::State};
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct RobotStatsQuery {
@@ -33,11 +29,11 @@ async fn list_robot_stats(
         params.per_page.unwrap_or(20),
         params.sort.as_deref().unwrap_or("rating"),
         params.order.as_deref().unwrap_or("desc"),
-    ).await?;
+    )
+    .await?;
     Ok(Json(result))
 }
 
 pub fn routes() -> Router<Pool> {
-    Router::new()
-        .route("/robots", get(list_robot_stats))
+    Router::new().route("/robots", get(list_robot_stats))
 }

@@ -1,8 +1,10 @@
+use crate::error::AppError;
+use crate::models::{
+    MemberRobotRole, PaginatedResponse, Team, TeamDetail, TeamMember, TeamMemberWithRoles,
+};
 use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::error::AppError;
-use crate::models::{Team, TeamDetail, TeamMember, TeamMemberWithRoles, MemberRobotRole, PaginatedResponse};
 
 #[derive(Deserialize)]
 pub struct CreateTeamInput {
@@ -58,13 +60,12 @@ pub async fn list_teams(
             .fetch_one(pool)
             .await?;
 
-        let teams: Vec<Team> = sqlx::query_as(
-            "SELECT * FROM teams ORDER BY name LIMIT $1 OFFSET $2"
-        )
-        .bind(per_page)
-        .bind(offset)
-        .fetch_all(pool)
-        .await?;
+        let teams: Vec<Team> =
+            sqlx::query_as("SELECT * FROM teams ORDER BY name LIMIT $1 OFFSET $2")
+                .bind(per_page)
+                .bind(offset)
+                .fetch_all(pool)
+                .await?;
 
         (total.0, teams)
     };
@@ -80,7 +81,7 @@ pub async fn get_team(pool: &PgPool, id: Uuid) -> Result<TeamDetail, AppError> {
         .ok_or_else(|| AppError::NotFound("Team not found".into()))?;
 
     let members: Vec<TeamMember> = sqlx::query_as(
-        "SELECT * FROM team_members WHERE team_id = $1 AND is_active = true ORDER BY name"
+        "SELECT * FROM team_members WHERE team_id = $1 AND is_active = true ORDER BY name",
     )
     .bind(id)
     .fetch_all(pool)
@@ -88,12 +89,11 @@ pub async fn get_team(pool: &PgPool, id: Uuid) -> Result<TeamDetail, AppError> {
 
     let mut members_with_roles = Vec::new();
     for member in members {
-        let roles: Vec<MemberRobotRole> = sqlx::query_as(
-            "SELECT * FROM member_robot_roles WHERE member_id = $1"
-        )
-        .bind(member.id)
-        .fetch_all(pool)
-        .await?;
+        let roles: Vec<MemberRobotRole> =
+            sqlx::query_as("SELECT * FROM member_robot_roles WHERE member_id = $1")
+                .bind(member.id)
+                .fetch_all(pool)
+                .await?;
 
         members_with_roles.push(TeamMemberWithRoles {
             member,
@@ -123,7 +123,11 @@ pub async fn create_team(pool: &PgPool, input: CreateTeamInput) -> Result<Team, 
     Ok(team)
 }
 
-pub async fn update_team(pool: &PgPool, id: Uuid, input: UpdateTeamInput) -> Result<Team, AppError> {
+pub async fn update_team(
+    pool: &PgPool,
+    id: Uuid,
+    input: UpdateTeamInput,
+) -> Result<Team, AppError> {
     let existing: Team = sqlx::query_as("SELECT * FROM teams WHERE id = $1")
         .bind(id)
         .fetch_optional(pool)

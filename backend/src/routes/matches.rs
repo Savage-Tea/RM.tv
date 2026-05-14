@@ -1,14 +1,14 @@
-use axum::{
-    extract::{Path, Query, State},
-    Json, Router,
-};
-use axum::routing::get;
-use serde::Deserialize;
-use uuid::Uuid;
 use crate::db::Pool;
 use crate::error::AppError;
-use crate::models::{MatchSummary, MatchDetail, PaginatedResponse};
+use crate::models::{MatchDetail, MatchSummary, PaginatedResponse};
 use crate::services::match_service;
+use axum::routing::get;
+use axum::{
+    Json, Router,
+    extract::{Path, Query, State},
+};
+use serde::Deserialize;
+use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct ListMatchesQuery {
@@ -28,15 +28,18 @@ async fn list_matches(
 ) -> Result<Json<PaginatedResponse<MatchSummary>>, AppError> {
     let result = match_service::list_matches(
         &pool,
-        params.event_id,
-        params.stage_id,
-        params.team_id,
-        params.status.as_deref(),
-        params.page.unwrap_or(1),
-        params.per_page.unwrap_or(20),
-        params.sort.as_deref().unwrap_or("scheduled_at"),
-        params.order.as_deref().unwrap_or("desc"),
-    ).await?;
+        match_service::ListMatchesParams {
+            event_id: params.event_id,
+            stage_id: params.stage_id,
+            team_id: params.team_id,
+            status: params.status.as_deref(),
+            page: params.page.unwrap_or(1),
+            per_page: params.per_page.unwrap_or(20),
+            sort: params.sort.as_deref().unwrap_or("scheduled_at"),
+            order: params.order.as_deref().unwrap_or("desc"),
+        },
+    )
+    .await?;
     Ok(Json(result))
 }
 

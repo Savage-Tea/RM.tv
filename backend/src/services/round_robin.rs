@@ -25,21 +25,33 @@ pub fn compute_standings(matches: &[RoundRobinMatch]) -> Vec<RoundRobinEntry> {
     for m in matches {
         // Update team_a stats
         {
-            let a = entries.entry(m.team_a_id).or_insert_with(|| RoundRobinEntry {
-                team_id: m.team_a_id,
-                wins: 0, losses: 0, draws: 0,
-                map_wins: 0, map_losses: 0, points: 0,
-            });
+            let a = entries
+                .entry(m.team_a_id)
+                .or_insert_with(|| RoundRobinEntry {
+                    team_id: m.team_a_id,
+                    wins: 0,
+                    losses: 0,
+                    draws: 0,
+                    map_wins: 0,
+                    map_losses: 0,
+                    points: 0,
+                });
             a.map_wins += m.score_a;
             a.map_losses += m.score_b;
         }
         // Update team_b stats
         {
-            let b = entries.entry(m.team_b_id).or_insert_with(|| RoundRobinEntry {
-                team_id: m.team_b_id,
-                wins: 0, losses: 0, draws: 0,
-                map_wins: 0, map_losses: 0, points: 0,
-            });
+            let b = entries
+                .entry(m.team_b_id)
+                .or_insert_with(|| RoundRobinEntry {
+                    team_id: m.team_b_id,
+                    wins: 0,
+                    losses: 0,
+                    draws: 0,
+                    map_wins: 0,
+                    map_losses: 0,
+                    points: 0,
+                });
             b.map_wins += m.score_b;
             b.map_losses += m.score_a;
         }
@@ -78,18 +90,27 @@ pub fn compute_standings(matches: &[RoundRobinMatch]) -> Vec<RoundRobinEntry> {
 
     // Sort by tie-break rules
     result.sort_by(|a, b| {
-        b.points.cmp(&a.points)
+        b.points
+            .cmp(&a.points)
             .then_with(|| (b.map_wins - b.map_losses).cmp(&(a.map_wins - a.map_losses)))
             .then_with(|| {
                 // Head-to-head: find match between these two teams
                 let h2h = matches.iter().find(|m| {
-                    (m.team_a_id == a.team_id && m.team_b_id == b.team_id) ||
-                    (m.team_a_id == b.team_id && m.team_b_id == a.team_id)
+                    (m.team_a_id == a.team_id && m.team_b_id == b.team_id)
+                        || (m.team_a_id == b.team_id && m.team_b_id == a.team_id)
                 });
                 match h2h {
                     Some(m) => {
-                        let a_score = if m.team_a_id == a.team_id { m.score_a } else { m.score_b };
-                        let b_score = if m.team_a_id == b.team_id { m.score_b } else { m.score_a };
+                        let a_score = if m.team_a_id == a.team_id {
+                            m.score_a
+                        } else {
+                            m.score_b
+                        };
+                        let b_score = if m.team_a_id == b.team_id {
+                            m.score_b
+                        } else {
+                            m.score_a
+                        };
                         b_score.cmp(&a_score)
                     }
                     None => std::cmp::Ordering::Equal,
@@ -125,9 +146,24 @@ mod tests {
         let t3 = tid("team3");
 
         let matches = vec![
-            RoundRobinMatch { team_a_id: t1, team_b_id: t2, score_a: 2, score_b: 1 },
-            RoundRobinMatch { team_a_id: t1, team_b_id: t3, score_a: 2, score_b: 1 },
-            RoundRobinMatch { team_a_id: t2, team_b_id: t3, score_a: 2, score_b: 1 },
+            RoundRobinMatch {
+                team_a_id: t1,
+                team_b_id: t2,
+                score_a: 2,
+                score_b: 1,
+            },
+            RoundRobinMatch {
+                team_a_id: t1,
+                team_b_id: t3,
+                score_a: 2,
+                score_b: 1,
+            },
+            RoundRobinMatch {
+                team_a_id: t2,
+                team_b_id: t3,
+                score_a: 2,
+                score_b: 1,
+            },
         ];
 
         let standings = compute_standings(&matches);
@@ -149,9 +185,24 @@ mod tests {
         // Both t1 and t2 beat t3, lose to each other once
         // t2 has better map differential
         let matches = vec![
-            RoundRobinMatch { team_a_id: t1, team_b_id: t2, score_a: 2, score_b: 1 },
-            RoundRobinMatch { team_a_id: t1, team_b_id: t3, score_a: 2, score_b: 0 },
-            RoundRobinMatch { team_a_id: t2, team_b_id: t3, score_a: 2, score_b: 0 },
+            RoundRobinMatch {
+                team_a_id: t1,
+                team_b_id: t2,
+                score_a: 2,
+                score_b: 1,
+            },
+            RoundRobinMatch {
+                team_a_id: t1,
+                team_b_id: t3,
+                score_a: 2,
+                score_b: 0,
+            },
+            RoundRobinMatch {
+                team_a_id: t2,
+                team_b_id: t3,
+                score_a: 2,
+                score_b: 0,
+            },
         ];
 
         let standings = compute_standings(&matches);

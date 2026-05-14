@@ -1,7 +1,7 @@
+use crate::error::AppError;
+use crate::models::{PaginatedResponse, RankingEntry, TeamEloHistory};
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::error::AppError;
-use crate::models::{TeamEloHistory, RankingEntry, PaginatedResponse};
 
 pub async fn list_rankings(
     pool: &PgPool,
@@ -11,12 +11,10 @@ pub async fn list_rankings(
 ) -> Result<PaginatedResponse<RankingEntry>, AppError> {
     let offset = (page - 1) * per_page;
 
-    let total: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM team_elo WHERE season = $1"
-    )
-    .bind(season)
-    .fetch_one(pool)
-    .await?;
+    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM team_elo WHERE season = $1")
+        .bind(season)
+        .fetch_one(pool)
+        .await?;
 
     let rankings: Vec<RankingEntry> = sqlx::query_as(
         r#"SELECT
@@ -30,7 +28,7 @@ pub async fn list_rankings(
         JOIN teams t ON te.team_id = t.id
         WHERE te.season = $1
         ORDER BY te.rating DESC
-        LIMIT $2 OFFSET $3"#
+        LIMIT $2 OFFSET $3"#,
     )
     .bind(season)
     .bind(per_page)
@@ -49,7 +47,7 @@ pub async fn get_ranking_history(
     let history: Vec<TeamEloHistory> = sqlx::query_as(
         r#"SELECT * FROM team_elo_history
         WHERE team_id = $1 AND season = $2
-        ORDER BY recorded_at ASC"#
+        ORDER BY recorded_at ASC"#,
     )
     .bind(team_id)
     .bind(season)

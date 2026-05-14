@@ -1,14 +1,14 @@
-use axum::{
-    extract::{Path, Query, State},
-    Json, Router,
-};
-use axum::routing::get;
-use serde::Deserialize;
-use uuid::Uuid;
 use crate::db::Pool;
 use crate::error::AppError;
-use crate::models::{Team, TeamDetail, PaginatedResponse};
+use crate::models::{PaginatedResponse, Team, TeamDetail};
 use crate::services::team_service;
+use axum::routing::get;
+use axum::{
+    Json, Router,
+    extract::{Path, Query, State},
+};
+use serde::Deserialize;
+use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct ListTeamsQuery {
@@ -26,7 +26,8 @@ async fn list_teams(
         params.search.as_deref(),
         params.page.unwrap_or(1),
         params.per_page.unwrap_or(20),
-    ).await?;
+    )
+    .await?;
     Ok(Json(result))
 }
 

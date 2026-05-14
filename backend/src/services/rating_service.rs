@@ -1,6 +1,6 @@
+use crate::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::error::AppError;
 
 /// Compute single-map robot rating from stats and config weights.
 ///
@@ -53,19 +53,32 @@ pub async fn update_robot_ratings(
 ) -> Result<(), AppError> {
     let config = get_or_create_config(pool, season).await?;
 
+    type MapStatRow = (Uuid, Uuid, String, i32, i32, i32, i32, i32, i32);
+
     // Get all map stats for this match
-    let stats: Vec<(Uuid, Uuid, String, i32, i32, i32, i32, i32, i32)> = sqlx::query_as(
+    let stats: Vec<MapStatRow> = sqlx::query_as(
         r#"SELECT mrs.id, mrs.member_id, mrs.robot_type,
            mrs.kills, mrs.deaths, mrs.damage, mrs.hp_healed, mrs.base_damage, mrs.alive_time_seconds
         FROM map_robot_stats mrs
         JOIN match_maps mm ON mrs.match_map_id = mm.id
-        WHERE mm.match_id = $1"#
+        WHERE mm.match_id = $1"#,
     )
     .bind(match_id)
-    .fetch_all(pool).await?;
+    .fetch_all(pool)
+    .await?;
 
-    for (_id, member_id, robot_type, kills, deaths, damage, hp_healed, base_damage, alive_time) in &stats {
-        let map_rating = compute_map_rating(*kills, *deaths, *damage, *hp_healed, *base_damage, *alive_time, &config);
+    for (_id, member_id, robot_type, kills, deaths, damage, hp_healed, base_damage, alive_time) in
+        &stats
+    {
+        let map_rating = compute_map_rating(
+            *kills,
+            *deaths,
+            *damage,
+            *hp_healed,
+            *base_damage,
+            *alive_time,
+            &config,
+        );
 
         // Get or create robot_rating
         let existing: Option<(Uuid, f64, i32)> = sqlx::query_as(
@@ -76,7 +89,8 @@ pub async fn update_robot_ratings(
 
         if let Some((rating_id, current_rating, matches_played)) = existing {
             // Weighted average: new rating counts as 1 match
-            let new_rating = (current_rating * matches_played as f64 + map_rating) / (matches_played + 1) as f64;
+            let new_rating =
+                (current_rating * matches_played as f64 + map_rating) / (matches_played + 1) as f64;
             let change = new_rating - current_rating;
 
             sqlx::query(
@@ -163,8 +177,12 @@ mod tests {
     #[test]
     fn test_compute_map_rating_custom_weights() {
         let config = RatingWeights {
-            kills: 2.0, deaths: -1.0, damage: 0.02,
-            heal: 0.01, base_damage: 0.2, survival: 0.002,
+            kills: 2.0,
+            deaths: -1.0,
+            damage: 0.02,
+            heal: 0.01,
+            base_damage: 0.2,
+            survival: 0.002,
         };
         let rating = compute_map_rating(5, 2, 1000, 500, 200, 100, &config);
         // 5*2 + 2*(-1) + 1000*0.02 + 500*0.01 + 200*0.2 + 100*0.002

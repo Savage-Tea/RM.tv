@@ -1,6 +1,6 @@
 use axum::{Extension, Router};
-use tower_http::{cors::CorsLayer, trace::TraceLayer, limit::RequestBodyLimitLayer};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tower_http::{cors::CorsLayer, limit::RequestBodyLimitLayer, trace::TraceLayer};
+use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 mod auth;
 mod config;

@@ -1,7 +1,7 @@
+use crate::datasource::{DataSource, EventInput, MatchInput, RankingInput, TeamInput};
 use async_trait::async_trait;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::datasource::{DataSource, EventInput, MatchInput, TeamInput, RankingInput};
 
 pub struct ManualSource {
     pool: PgPool,
@@ -37,12 +37,11 @@ impl DataSource for ManualSource {
 
         let mut result = Vec::new();
         for (id, name, series, season) in events {
-            let entries: Vec<(Uuid,)> = sqlx::query_as(
-                "SELECT team_id FROM event_entries WHERE event_id = $1"
-            )
-            .bind(id)
-            .fetch_all(&self.pool)
-            .await?;
+            let entries: Vec<(Uuid,)> =
+                sqlx::query_as("SELECT team_id FROM event_entries WHERE event_id = $1")
+                    .bind(id)
+                    .fetch_all(&self.pool)
+                    .await?;
 
             result.push(EventInput {
                 name,
@@ -85,14 +84,15 @@ impl DataSource for ManualSource {
                 abbreviation,
                 founded_year,
                 description,
-                members: members.into_iter().map(|(n, r, y)| {
-                    crate::datasource::MemberInput {
+                members: members
+                    .into_iter()
+                    .map(|(n, r, y)| crate::datasource::MemberInput {
                         name: n,
                         role: r,
                         joined_year: y,
                         robot_roles: vec![],
-                    }
-                }).collect(),
+                    })
+                    .collect(),
             });
         }
         Ok(result)

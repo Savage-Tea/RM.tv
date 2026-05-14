@@ -2,8 +2,8 @@ use async_trait::async_trait;
 use chrono::NaiveDate;
 use uuid::Uuid;
 
-pub mod mock;
 pub mod manual;
+pub mod mock;
 
 #[derive(Debug, Clone)]
 pub struct EventInput {
@@ -120,7 +120,9 @@ pub struct DataSourceRegistry {
 
 impl DataSourceRegistry {
     pub fn new() -> Self {
-        Self { sources: Vec::new() }
+        Self {
+            sources: Vec::new(),
+        }
     }
 
     pub fn register(&mut self, source: Box<dyn DataSource>) {

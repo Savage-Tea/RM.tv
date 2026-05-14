@@ -1,15 +1,15 @@
-use axum::{
-    extract::{Path, State},
-    Extension, Json, Router,
-};
-use axum::routing::{post, put, delete};
-use uuid::Uuid;
 use crate::auth::middleware::require_auth;
 use crate::config::Config;
 use crate::db::Pool;
 use crate::error::AppError;
 use crate::models::{Event, EventStage};
-use crate::services::event_service::{self, CreateEventInput, UpdateEventInput, CreateStageInput};
+use crate::services::event_service::{self, CreateEventInput, CreateStageInput, UpdateEventInput};
+use axum::routing::{delete, post, put};
+use axum::{
+    Extension, Json, Router,
+    extract::{Path, State},
+};
+use uuid::Uuid;
 
 async fn create_event(
     State(pool): State<Pool>,

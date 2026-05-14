@@ -1,9 +1,11 @@
+use crate::error::AppError;
+use crate::models::{
+    MapRobotStats, Match, MatchDetail, MatchMap, MatchParticipant, MatchSummary, PaginatedResponse,
+};
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::error::AppError;
-use crate::models::{Match, MatchMap, MatchParticipant, MapRobotStats, MatchDetail, MatchSummary, PaginatedResponse};
 
 #[derive(Deserialize)]
 pub struct CreateMatchInput {
@@ -31,17 +33,32 @@ pub struct UpdateMatchInput {
     pub group_name: Option<String>,
 }
 
+pub struct ListMatchesParams<'a> {
+    pub event_id: Option<Uuid>,
+    pub stage_id: Option<Uuid>,
+    pub team_id: Option<Uuid>,
+    pub status: Option<&'a str>,
+    pub page: i64,
+    pub per_page: i64,
+    pub sort: &'a str,
+    pub order: &'a str,
+}
+
 pub async fn list_matches(
     pool: &PgPool,
-    event_id: Option<Uuid>,
-    stage_id: Option<Uuid>,
-    team_id: Option<Uuid>,
-    status: Option<&str>,
-    page: i64,
-    per_page: i64,
-    sort: &str,
-    order: &str,
+    params: ListMatchesParams<'_>,
 ) -> Result<PaginatedResponse<MatchSummary>, AppError> {
+    let ListMatchesParams {
+        event_id,
+        stage_id,
+        team_id,
+        status,
+        page,
+        per_page,
+        sort,
+        order,
+    } = params;
+
     let offset = (page - 1) * per_page;
 
     let sort_col = match sort {
@@ -49,7 +66,11 @@ pub async fn list_matches(
         "created_at" => "m.created_at",
         _ => "m.scheduled_at",
     };
-    let sort_order = if order.eq_ignore_ascii_case("asc") { "ASC" } else { "DESC" };
+    let sort_order = if order.eq_ignore_ascii_case("asc") {
+        "ASC"
+    } else {
+        "DESC"
+    };
 
     let query = format!(
         r#"SELECT m.id, m.event_id, e.name as event_name,
@@ -70,23 +91,30 @@ pub async fn list_matches(
         sort_col, sort_order
     );
 
-    let count_query = format!(
+    let total: (i64,) = sqlx::query_as(
         r#"SELECT COUNT(*)
            FROM matches m
            WHERE ($1::uuid IS NULL OR m.event_id = $1)
              AND ($2::uuid IS NULL OR m.stage_id = $2)
              AND ($3::uuid IS NULL OR m.team_a_id = $3 OR m.team_b_id = $3)
-             AND ($4::text IS NULL OR m.status = $4)"#
-    );
-
-    let total: (i64,) = sqlx::query_as(&count_query)
-        .bind(event_id).bind(stage_id).bind(team_id).bind(status)
-        .fetch_one(pool).await?;
+             AND ($4::text IS NULL OR m.status = $4)"#,
+    )
+    .bind(event_id)
+    .bind(stage_id)
+    .bind(team_id)
+    .bind(status)
+    .fetch_one(pool)
+    .await?;
 
     let matches: Vec<MatchSummary> = sqlx::query_as(&query)
-        .bind(event_id).bind(stage_id).bind(team_id).bind(status)
-        .bind(per_page).bind(offset)
-        .fetch_all(pool).await?;
+        .bind(event_id)
+        .bind(stage_id)
+        .bind(team_id)
+        .bind(status)
+        .bind(per_page)
+        .bind(offset)
+        .fetch_all(pool)
+        .await?;
 
     Ok(PaginatedResponse::new(matches, total.0, page, per_page))
 }
@@ -98,33 +126,35 @@ pub async fn get_match(pool: &PgPool, id: Uuid) -> Result<MatchDetail, AppError>
         .await?
         .ok_or_else(|| AppError::NotFound("Match not found".into()))?;
 
-    let maps: Vec<MatchMap> = sqlx::query_as(
-        "SELECT * FROM match_maps WHERE match_id = $1 ORDER BY order_index"
-    )
-    .bind(id)
-    .fetch_all(pool)
-    .await?;
+    let maps: Vec<MatchMap> =
+        sqlx::query_as("SELECT * FROM match_maps WHERE match_id = $1 ORDER BY order_index")
+            .bind(id)
+            .fetch_all(pool)
+            .await?;
 
-    let participants: Vec<MatchParticipant> = sqlx::query_as(
-        "SELECT * FROM match_participants WHERE match_id = $1"
-    )
-    .bind(id)
-    .fetch_all(pool)
-    .await?;
+    let participants: Vec<MatchParticipant> =
+        sqlx::query_as("SELECT * FROM match_participants WHERE match_id = $1")
+            .bind(id)
+            .fetch_all(pool)
+            .await?;
 
     let map_ids: Vec<Uuid> = maps.iter().map(|m| m.id).collect();
     let mut robot_stats = Vec::new();
     for map_id in &map_ids {
-        let stats: Vec<MapRobotStats> = sqlx::query_as(
-            "SELECT * FROM map_robot_stats WHERE match_map_id = $1"
-        )
-        .bind(map_id)
-        .fetch_all(pool)
-        .await?;
+        let stats: Vec<MapRobotStats> =
+            sqlx::query_as("SELECT * FROM map_robot_stats WHERE match_map_id = $1")
+                .bind(map_id)
+                .fetch_all(pool)
+                .await?;
         robot_stats.extend(stats);
     }
 
-    Ok(MatchDetail { match_data, maps, participants, robot_stats })
+    Ok(MatchDetail {
+        match_data,
+        maps,
+        participants,
+        robot_stats,
+    })
 }
 
 pub async fn create_match(pool: &PgPool, input: CreateMatchInput) -> Result<Match, AppError> {
@@ -145,7 +175,11 @@ pub async fn create_match(pool: &PgPool, input: CreateMatchInput) -> Result<Matc
     Ok(m)
 }
 
-pub async fn update_match(pool: &PgPool, id: Uuid, input: UpdateMatchInput) -> Result<Match, AppError> {
+pub async fn update_match(
+    pool: &PgPool,
+    id: Uuid,
+    input: UpdateMatchInput,
+) -> Result<Match, AppError> {
     let existing: Match = sqlx::query_as("SELECT * FROM matches WHERE id = $1")
         .bind(id)
         .fetch_optional(pool)

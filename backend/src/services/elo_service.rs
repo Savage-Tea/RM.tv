@@ -1,6 +1,6 @@
+use crate::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::error::AppError;
 
 /// Expected win probability using standard Elo formula.
 pub fn expected(rating_a: f64, rating_b: f64) -> f64 {
@@ -26,13 +26,12 @@ pub async fn update_after_match(
     season: &str,
 ) -> Result<(), AppError> {
     // Get match data
-    let match_data: (Uuid, Uuid, Option<i32>, Option<i32>) = sqlx::query_as(
-        "SELECT team_a_id, team_b_id, score_a, score_b FROM matches WHERE id = $1"
-    )
-    .bind(match_id)
-    .fetch_optional(pool)
-    .await?
-    .ok_or_else(|| AppError::NotFound("Match not found".into()))?;
+    let match_data: (Uuid, Uuid, Option<i32>, Option<i32>) =
+        sqlx::query_as("SELECT team_a_id, team_b_id, score_a, score_b FROM matches WHERE id = $1")
+            .bind(match_id)
+            .fetch_optional(pool)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Match not found".into()))?;
 
     let (team_a_id, team_b_id, score_a, score_b) = match_data;
     let sa = score_a.ok_or_else(|| AppError::BadRequest("Match has no scores".into()))?;
@@ -98,12 +97,10 @@ pub async fn update_after_match(
 
 /// Apply season decay: ratings regress toward 1500 by 33%.
 pub async fn season_decay(pool: &PgPool, season: &str) -> Result<(), AppError> {
-    sqlx::query(
-        "UPDATE team_elo SET rating = 1500.0 + (rating - 1500.0) * 0.67 WHERE season = $1"
-    )
-    .bind(season)
-    .execute(pool)
-    .await?;
+    sqlx::query("UPDATE team_elo SET rating = 1500.0 + (rating - 1500.0) * 0.67 WHERE season = $1")
+        .bind(season)
+        .execute(pool)
+        .await?;
 
     Ok(())
 }
@@ -114,24 +111,39 @@ struct EloRecord {
     matches_played: i32,
 }
 
-async fn get_or_create_elo(pool: &PgPool, team_id: Uuid, season: &str) -> Result<EloRecord, AppError> {
+async fn get_or_create_elo(
+    pool: &PgPool,
+    team_id: Uuid,
+    season: &str,
+) -> Result<EloRecord, AppError> {
     let existing: Option<(Uuid, f64, i32)> = sqlx::query_as(
-        "SELECT id, rating, matches_played FROM team_elo WHERE team_id = $1 AND season = $2"
+        "SELECT id, rating, matches_played FROM team_elo WHERE team_id = $1 AND season = $2",
     )
-    .bind(team_id).bind(season)
-    .fetch_optional(pool).await?;
+    .bind(team_id)
+    .bind(season)
+    .fetch_optional(pool)
+    .await?;
 
     if let Some((id, rating, matches_played)) = existing {
-        Ok(EloRecord { id, rating: rating as f64, matches_played })
+        Ok(EloRecord {
+            id,
+            rating,
+            matches_played,
+        })
     } else {
         let id = Uuid::new_v4();
-        sqlx::query(
-            "INSERT INTO team_elo (id, team_id, season) VALUES ($1, $2, $3)"
-        )
-        .bind(id).bind(team_id).bind(season)
-        .execute(pool).await?;
+        sqlx::query("INSERT INTO team_elo (id, team_id, season) VALUES ($1, $2, $3)")
+            .bind(id)
+            .bind(team_id)
+            .bind(season)
+            .execute(pool)
+            .await?;
 
-        Ok(EloRecord { id, rating: 1500.0, matches_played: 0 })
+        Ok(EloRecord {
+            id,
+            rating: 1500.0,
+            matches_played: 0,
+        })
     }
 }
 

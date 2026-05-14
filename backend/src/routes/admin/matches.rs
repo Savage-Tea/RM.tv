@@ -1,15 +1,15 @@
-use axum::{
-    extract::{Path, State},
-    Extension, Json, Router,
-};
-use axum::routing::{post, put};
-use uuid::Uuid;
 use crate::auth::middleware::require_auth;
 use crate::config::Config;
 use crate::db::Pool;
 use crate::error::AppError;
 use crate::models::Match;
 use crate::services::match_service::{self, CreateMatchInput, UpdateMatchInput};
+use axum::routing::{post, put};
+use axum::{
+    Extension, Json, Router,
+    extract::{Path, State},
+};
+use uuid::Uuid;
 
 async fn create_match(
     State(pool): State<Pool>,

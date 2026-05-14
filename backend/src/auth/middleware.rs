@@ -1,11 +1,11 @@
-use axum::{
-    http::{header, StatusCode},
-    response::IntoResponse,
-    Extension, Json,
-};
-use serde_json::json;
 use crate::auth::jwt;
 use crate::config::Config;
+use axum::{
+    Extension, Json,
+    http::{StatusCode, header},
+    response::IntoResponse,
+};
+use serde_json::json;
 
 #[derive(Debug, Clone)]
 pub struct AuthUser {
@@ -30,7 +30,8 @@ pub async fn require_auth(
             return Ok((
                 StatusCode::UNAUTHORIZED,
                 Json(json!({ "error": "Missing authorization token" })),
-            ).into_response());
+            )
+                .into_response());
         }
     };
 
@@ -40,7 +41,8 @@ pub async fn require_auth(
             return Ok((
                 StatusCode::UNAUTHORIZED,
                 Json(json!({ "error": "Invalid or expired token" })),
-            ).into_response());
+            )
+                .into_response());
         }
     };
 

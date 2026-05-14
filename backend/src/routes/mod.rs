@@ -1,14 +1,14 @@
-mod health;
+mod admin;
+mod auth;
 mod events;
+mod health;
 mod matches;
-mod teams;
 mod rankings;
 mod stats;
-mod auth;
-mod admin;
+mod teams;
 
-use axum::Router;
 use crate::db::Pool;
+use axum::Router;
 
 pub fn api_routes() -> Router<Pool> {
     Router::new()

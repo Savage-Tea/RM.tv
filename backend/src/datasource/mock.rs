@@ -1,9 +1,9 @@
+use crate::datasource::{
+    DataSource, EventInput, MapInput, MatchInput, MemberInput, ParticipantInput, RankingInput,
+    RobotStatsInput, StageInput, TeamInput,
+};
 use async_trait::async_trait;
 use uuid::Uuid;
-use crate::datasource::{
-    DataSource, EventInput, MatchInput, TeamInput, RankingInput,
-    StageInput, MapInput, RobotStatsInput, ParticipantInput, MemberInput,
-};
 
 pub struct MockDataSource;
 
@@ -31,15 +31,13 @@ impl DataSource for MockDataSource {
                 start_date: Some(chrono::NaiveDate::from_ymd_opt(2025, 6, 1).unwrap()),
                 end_date: Some(chrono::NaiveDate::from_ymd_opt(2025, 6, 7).unwrap()),
                 location: Some("深圳".into()),
-                stages: vec![
-                    StageInput {
-                        name: "小组赛A组".into(),
-                        stage_format: "round_robin".into(),
-                        stage_type: "group".into(),
-                        order_index: 1,
-                        progression_to: vec![],
-                    },
-                ],
+                stages: vec![StageInput {
+                    name: "小组赛A组".into(),
+                    stage_format: "round_robin".into(),
+                    stage_type: "group".into(),
+                    order_index: 1,
+                    progression_to: vec![],
+                }],
                 entries: vec![team1, team2, team3, team4],
             },
             EventInput {
@@ -67,27 +65,23 @@ impl DataSource for MockDataSource {
             score_a: Some(2),
             score_b: Some(1),
             format: "bo3".into(),
-            maps: vec![
-                MapInput {
-                    map_name: "战场A".into(),
-                    order_index: 1,
-                    score_a: Some(100),
-                    score_b: Some(80),
-                    duration_seconds: Some(420),
-                    robot_stats: vec![
-                        RobotStatsInput {
-                            member_id: member1,
-                            robot_type: "hero".into(),
-                            kills: 3,
-                            deaths: 1,
-                            damage: 2000,
-                            hp_healed: 500,
-                            base_damage: 300,
-                            alive_time_seconds: 380,
-                        },
-                    ],
-                },
-            ],
+            maps: vec![MapInput {
+                map_name: "战场A".into(),
+                order_index: 1,
+                score_a: Some(100),
+                score_b: Some(80),
+                duration_seconds: Some(420),
+                robot_stats: vec![RobotStatsInput {
+                    member_id: member1,
+                    robot_type: "hero".into(),
+                    kills: 3,
+                    deaths: 1,
+                    damage: 2000,
+                    hp_healed: 500,
+                    base_damage: 300,
+                    alive_time_seconds: 380,
+                }],
+            }],
             participants: vec![
                 ParticipantInput {
                     team_id: team_a,
@@ -100,7 +94,10 @@ impl DataSource for MockDataSource {
                     robot_type: "infantry".into(),
                 },
             ],
-            scheduled_at: Some(chrono::NaiveDateTime::parse_from_str("2025-06-01 14:00:00", "%Y-%m-%d %H:%M:%S").unwrap()),
+            scheduled_at: Some(
+                chrono::NaiveDateTime::parse_from_str("2025-06-01 14:00:00", "%Y-%m-%d %H:%M:%S")
+                    .unwrap(),
+            ),
             group_name: Some("小组A".into()),
             round: Some(1),
         }])
@@ -137,14 +134,12 @@ impl DataSource for MockDataSource {
                 abbreviation: Some("SJTU".into()),
                 founded_year: Some(2016),
                 description: None,
-                members: vec![
-                    MemberInput {
-                        name: "队员C".into(),
-                        role: "队长".into(),
-                        joined_year: Some(2023),
-                        robot_roles: vec!["sentinel".into()],
-                    },
-                ],
+                members: vec![MemberInput {
+                    name: "队员C".into(),
+                    role: "队长".into(),
+                    joined_year: Some(2023),
+                    robot_roles: vec!["sentinel".into()],
+                }],
             },
         ])
     }

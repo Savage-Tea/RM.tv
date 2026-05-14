@@ -18,13 +18,14 @@ pub fn validate_progression(
     }
 
     // Group stage to bracket: slots should be power of 2
-    if from_stage.stage_type == "group" && to_stage.stage_type == "bracket" {
-        if !is_power_of_two(slots) {
-            return Err(format!(
-                "Bracket stage requires power-of-2 slots, got {}",
-                slots
-            ));
-        }
+    if from_stage.stage_type == "group"
+        && to_stage.stage_type == "bracket"
+        && !is_power_of_two(slots)
+    {
+        return Err(format!(
+            "Bracket stage requires power-of-2 slots, got {}",
+            slots
+        ));
     }
 
     // Single-elim stages should have power-of-2 entries
@@ -48,7 +49,8 @@ pub fn get_qualifying_teams(
     let mut sorted = standings.to_vec();
     sorted.sort_by_key(|s| s.rank);
 
-    sorted.iter()
+    sorted
+        .iter()
         .take(progression.slots as usize)
         .map(|s| s.team_id)
         .collect()
@@ -81,13 +83,16 @@ pub fn generate_bracket_matches(
     to_stage_id: Uuid,
     event_id: Uuid,
 ) -> Vec<MatchTemplate> {
-    seeds.iter().map(|s| MatchTemplate {
-        event_id,
-        stage_id: to_stage_id,
-        team_a_id: s.team_a,
-        team_b_id: s.team_b,
-        bracket_position: s.position.clone(),
-    }).collect()
+    seeds
+        .iter()
+        .map(|s| MatchTemplate {
+            event_id,
+            stage_id: to_stage_id,
+            team_a_id: s.team_a,
+            team_b_id: s.team_b,
+            bracket_position: s.position.clone(),
+        })
+        .collect()
 }
 
 #[derive(Debug, Clone)]

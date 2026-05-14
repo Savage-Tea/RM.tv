@@ -1,14 +1,14 @@
-use axum::{
-    extract::{Path, Query, State},
-    Json, Router,
-};
-use axum::routing::get;
-use serde::Deserialize;
-use uuid::Uuid;
 use crate::db::Pool;
 use crate::error::AppError;
-use crate::models::{RankingEntry, TeamEloHistory, PaginatedResponse};
+use crate::models::{PaginatedResponse, RankingEntry, TeamEloHistory};
 use crate::services::ranking_service;
+use axum::routing::get;
+use axum::{
+    Json, Router,
+    extract::{Path, Query, State},
+};
+use serde::Deserialize;
+use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct ListRankingsQuery {
@@ -27,7 +27,8 @@ async fn list_rankings(
         &season,
         params.page.unwrap_or(1),
         params.per_page.unwrap_or(50),
-    ).await?;
+    )
+    .await?;
     Ok(Json(result))
 }
 

@@ -23,7 +23,8 @@ pub fn build_single_elim_bracket(
     let mut nodes: Vec<BracketNode> = Vec::new();
 
     for &round in round_order {
-        let round_matches: Vec<&EliminationMatch> = matches.iter()
+        let round_matches: Vec<&EliminationMatch> = matches
+            .iter()
             .filter(|m| m.bracket_position.starts_with(round))
             .collect();
 
@@ -31,7 +32,7 @@ pub fn build_single_elim_bracket(
             let next_round = next_round(round, round_order);
             let winner_to = next_round.map(|r| {
                 let idx = match_index(&m.bracket_position);
-                format!("{}{}", r, (idx + 1) / 2)
+                format!("{}{}", r, (idx + 1).div_ceil(2))
             });
 
             nodes.push(BracketNode {
@@ -63,7 +64,8 @@ pub fn build_double_elim_bracket(
     let mut lower_nodes = Vec::new();
 
     for &round in round_order {
-        let round_upper: Vec<&EliminationMatch> = upper_matches.iter()
+        let round_upper: Vec<&EliminationMatch> = upper_matches
+            .iter()
             .filter(|m| m.bracket_position.starts_with(round))
             .collect();
 
@@ -71,7 +73,7 @@ pub fn build_double_elim_bracket(
             let next_round = next_round(round, round_order);
             let winner_to = next_round.map(|r| {
                 let idx = match_index(&m.bracket_position);
-                format!("{}{}", r, (idx + 1) / 2)
+                format!("{}{}", r, (idx + 1).div_ceil(2))
             });
 
             upper_nodes.push(BracketNode {
@@ -86,7 +88,8 @@ pub fn build_double_elim_bracket(
         }
 
         // Lower bracket matches
-        let round_lower: Vec<&EliminationMatch> = lower_matches.iter()
+        let round_lower: Vec<&EliminationMatch> = lower_matches
+            .iter()
             .filter(|m| m.bracket_position.starts_with(&format!("LB{}", round)))
             .collect();
 
@@ -146,18 +149,24 @@ mod tests {
     fn test_single_elim_4_teams() {
         let matches = vec![
             EliminationMatch {
-                team_a_id: tid("t1"), team_b_id: tid("t2"),
-                score_a: Some(2), score_b: Some(0),
+                team_a_id: tid("t1"),
+                team_b_id: tid("t2"),
+                score_a: Some(2),
+                score_b: Some(0),
                 bracket_position: "SF1".into(),
             },
             EliminationMatch {
-                team_a_id: tid("t3"), team_b_id: tid("t4"),
-                score_a: Some(1), score_b: Some(2),
+                team_a_id: tid("t3"),
+                team_b_id: tid("t4"),
+                score_a: Some(1),
+                score_b: Some(2),
                 bracket_position: "SF2".into(),
             },
             EliminationMatch {
-                team_a_id: tid("t1"), team_b_id: tid("t4"),
-                score_a: None, score_b: None,
+                team_a_id: tid("t1"),
+                team_b_id: tid("t4"),
+                score_a: None,
+                score_b: None,
                 bracket_position: "F".into(),
             },
         ];
