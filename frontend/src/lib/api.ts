@@ -9,6 +9,7 @@ import type {
   TeamEloHistory,
   RobotRating,
   PaginatedResponse,
+  StageOverview,
 } from "@/types";
 
 const BASE_URL = "/api";
@@ -58,6 +59,8 @@ export const api = {
       fetchJSON<PaginatedResponse<Event>>("/events", params),
     get: (id: string) =>
       fetchJSON<EventDetail>(`/events/${id}`),
+    stageOverview: (eventId: string, stageId: string) =>
+      fetchJSON<StageOverview>(`/events/${eventId}/stages/${stageId}`),
   },
 
   matches: {

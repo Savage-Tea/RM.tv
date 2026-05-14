@@ -117,7 +117,7 @@ async fn get_or_create_elo(
     season: &str,
 ) -> Result<EloRecord, AppError> {
     let existing: Option<(Uuid, f64, i32)> = sqlx::query_as(
-        "SELECT id, rating, matches_played FROM team_elo WHERE team_id = $1 AND season = $2",
+        "SELECT id, rating::float8, matches_played FROM team_elo WHERE team_id = $1 AND season = $2",
     )
     .bind(team_id)
     .bind(season)

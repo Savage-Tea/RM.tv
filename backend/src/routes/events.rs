@@ -1,7 +1,8 @@
 use crate::db::Pool;
 use crate::error::AppError;
 use crate::models::{Event, EventDetail, PaginatedResponse};
-use crate::services::event_service;
+use crate::services::{event_service, stage_service};
+use crate::services::stage_service::StageOverview;
 use axum::routing::get;
 use axum::{
     Json, Router,
@@ -45,8 +46,17 @@ async fn get_event(
     Ok(Json(result))
 }
 
+async fn get_stage_overview(
+    State(pool): State<Pool>,
+    Path((_event_id, stage_id)): Path<(Uuid, Uuid)>,
+) -> Result<Json<StageOverview>, AppError> {
+    let result = stage_service::get_stage_overview(&pool, stage_id).await?;
+    Ok(Json(result))
+}
+
 pub fn routes() -> Router<Pool> {
     Router::new()
         .route("/", get(list_events))
-        .route("/{id}", get(get_event))
+        .route("/:id", get(get_event))
+        .route("/:event_id/stages/:stage_id", get(get_stage_overview))
 }

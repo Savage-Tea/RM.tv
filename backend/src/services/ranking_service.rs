@@ -22,7 +22,7 @@ pub async fn list_rankings(
             te.team_id,
             t.name as team_name,
             t.abbreviation as team_abbreviation,
-            te.rating,
+            te.rating::float8 as rating,
             te.matches_played
         FROM team_elo te
         JOIN teams t ON te.team_id = t.id
@@ -45,7 +45,7 @@ pub async fn get_ranking_history(
     season: &str,
 ) -> Result<Vec<TeamEloHistory>, AppError> {
     let history: Vec<TeamEloHistory> = sqlx::query_as(
-        r#"SELECT * FROM team_elo_history
+        r#"SELECT id, team_id, match_id, season, old_rating::float8, new_rating::float8, change::float8, recorded_at FROM team_elo_history
         WHERE team_id = $1 AND season = $2
         ORDER BY recorded_at ASC"#,
     )

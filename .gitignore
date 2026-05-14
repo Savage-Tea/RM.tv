@@ -25,3 +25,12 @@ pgdata/
 
 # Logs
 *.log
+
+# Dev runtime
+.dev-pids
+__pycache__/
+*.pyc
+
+# Scraped data & transcripts
+*.jsonl
+backups/

@@ -20,7 +20,7 @@ async fn list_robot_stats(
     State(pool): State<Pool>,
     Query(params): Query<RobotStatsQuery>,
 ) -> Result<Json<PaginatedResponse<RobotRating>>, AppError> {
-    let season = params.season.unwrap_or_else(|| "2025".into());
+    let season = params.season.unwrap_or_else(|| "2026".into());
     let result = stats_service::list_robot_ratings(
         &pool,
         &season,

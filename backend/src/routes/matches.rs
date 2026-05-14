@@ -54,5 +54,5 @@ async fn get_match(
 pub fn routes() -> Router<Pool> {
     Router::new()
         .route("/", get(list_matches))
-        .route("/{id}", get(get_match))
+        .route("/:id", get(get_match))
 }

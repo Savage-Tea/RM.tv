@@ -90,7 +90,7 @@ pub async fn get_team(pool: &PgPool, id: Uuid) -> Result<TeamDetail, AppError> {
     let mut members_with_roles = Vec::new();
     for member in members {
         let roles: Vec<MemberRobotRole> =
-            sqlx::query_as("SELECT * FROM member_robot_roles WHERE member_id = $1")
+            sqlx::query_as("SELECT id, member_id, robot_type::text AS robot_type, is_primary FROM member_robot_roles WHERE member_id = $1")
                 .bind(member.id)
                 .fetch_all(pool)
                 .await?;

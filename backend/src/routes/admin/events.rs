@@ -4,7 +4,7 @@ use crate::db::Pool;
 use crate::error::AppError;
 use crate::models::{Event, EventStage};
 use crate::services::event_service::{self, CreateEventInput, CreateStageInput, UpdateEventInput};
-use axum::routing::{delete, post, put};
+use axum::routing::{post, put};
 use axum::{
     Extension, Json, Router,
     extract::{Path, State},
@@ -52,8 +52,7 @@ async fn create_event_stage(
 pub fn routes() -> Router<Pool> {
     Router::new()
         .route("/", post(create_event))
-        .route("/{id}", put(update_event))
-        .route("/{id}", delete(delete_event))
-        .route("/{event_id}/stages", post(create_event_stage))
+        .route("/:id", put(update_event).delete(delete_event))
+        .route("/:event_id/stages", post(create_event_stage))
         .route_layer(axum::middleware::from_fn_with_state((), require_auth))
 }

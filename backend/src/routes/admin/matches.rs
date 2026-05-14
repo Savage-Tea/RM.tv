@@ -33,6 +33,6 @@ async fn update_match(
 pub fn routes() -> Router<Pool> {
     Router::new()
         .route("/", post(create_match))
-        .route("/{id}", put(update_match))
+        .route("/:id", put(update_match))
         .route_layer(axum::middleware::from_fn_with_state((), require_auth))
 }

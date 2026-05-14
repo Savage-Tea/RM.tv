@@ -39,6 +39,11 @@ pub struct CreateStageInput {
     pub end_date: Option<NaiveDate>,
 }
 
+// Column lists with enum-to-text casts for sqlx::FromRow compatibility
+const EVENT_COLS: &str = "id, name, series, season, start_date, end_date, location, status::text AS status, logo_url, created_at, updated_at";
+const STAGE_COLS: &str = "id, event_id, name, stage_format::text AS stage_format, stage_type::text AS stage_type, order_index, start_date, end_date, created_at";
+const ENTRY_COLS: &str = "id, event_id, team_id, seed, created_at";
+
 pub async fn list_events(
     pool: &PgPool,
     season: Option<&str>,
@@ -50,7 +55,6 @@ pub async fn list_events(
 ) -> Result<PaginatedResponse<Event>, AppError> {
     let offset = (page - 1) * per_page;
 
-    // Build dynamic query safely with whitelisted sort column
     let sort_col = match sort {
         "name" => "name",
         "start_date" => "start_date",
@@ -66,15 +70,15 @@ pub async fn list_events(
     let (total, events) = match (season, status) {
         (Some(s), Some(st)) => {
             let total: (i64,) =
-                sqlx::query_as("SELECT COUNT(*) FROM events WHERE season = $1 AND status = $2")
+                sqlx::query_as("SELECT COUNT(*) FROM events WHERE season = $1 AND status::text = $2")
                     .bind(s)
                     .bind(st)
                     .fetch_one(pool)
                     .await?;
 
             let events: Vec<Event> = sqlx::query_as(&format!(
-                "SELECT * FROM events WHERE season = $1 AND status = $2 ORDER BY {} {} LIMIT $3 OFFSET $4",
-                sort_col, sort_order
+                "SELECT {} FROM events WHERE season = $1 AND status::text = $2 ORDER BY {} {} LIMIT $3 OFFSET $4",
+                EVENT_COLS, sort_col, sort_order
             ))
             .bind(s).bind(st).bind(per_page).bind(offset)
             .fetch_all(pool).await?;
@@ -88,8 +92,8 @@ pub async fn list_events(
                 .await?;
 
             let events: Vec<Event> = sqlx::query_as(&format!(
-                "SELECT * FROM events WHERE season = $1 ORDER BY {} {} LIMIT $2 OFFSET $3",
-                sort_col, sort_order
+                "SELECT {} FROM events WHERE season = $1 ORDER BY {} {} LIMIT $2 OFFSET $3",
+                EVENT_COLS, sort_col, sort_order
             ))
             .bind(s)
             .bind(per_page)
@@ -100,14 +104,14 @@ pub async fn list_events(
             (total.0, events)
         }
         (None, Some(st)) => {
-            let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM events WHERE status = $1")
+            let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM events WHERE status::text = $1")
                 .bind(st)
                 .fetch_one(pool)
                 .await?;
 
             let events: Vec<Event> = sqlx::query_as(&format!(
-                "SELECT * FROM events WHERE status = $1 ORDER BY {} {} LIMIT $2 OFFSET $3",
-                sort_col, sort_order
+                "SELECT {} FROM events WHERE status::text = $1 ORDER BY {} {} LIMIT $2 OFFSET $3",
+                EVENT_COLS, sort_col, sort_order
             ))
             .bind(st)
             .bind(per_page)
@@ -123,8 +127,8 @@ pub async fn list_events(
                 .await?;
 
             let events: Vec<Event> = sqlx::query_as(&format!(
-                "SELECT * FROM events ORDER BY {} {} LIMIT $1 OFFSET $2",
-                sort_col, sort_order
+                "SELECT {} FROM events ORDER BY {} {} LIMIT $1 OFFSET $2",
+                EVENT_COLS, sort_col, sort_order
             ))
             .bind(per_page)
             .bind(offset)
@@ -139,21 +143,21 @@ pub async fn list_events(
 }
 
 pub async fn get_event(pool: &PgPool, id: Uuid) -> Result<EventDetail, AppError> {
-    let event: Event = sqlx::query_as("SELECT * FROM events WHERE id = $1")
+    let event: Event = sqlx::query_as(&format!("SELECT {} FROM events WHERE id = $1", EVENT_COLS))
         .bind(id)
         .fetch_optional(pool)
         .await?
         .ok_or_else(|| AppError::NotFound("Event not found".into()))?;
 
     let stages: Vec<EventStage> =
-        sqlx::query_as("SELECT * FROM event_stages WHERE event_id = $1 ORDER BY order_index")
+        sqlx::query_as(&format!("SELECT {} FROM event_stages WHERE event_id = $1 ORDER BY order_index", STAGE_COLS))
             .bind(id)
             .fetch_all(pool)
             .await?;
 
-    let entries: Vec<EventEntry> = sqlx::query_as(
-        "SELECT * FROM event_entries WHERE event_id = $1 ORDER BY seed ASC NULLS LAST",
-    )
+    let entries: Vec<EventEntry> = sqlx::query_as(&format!(
+        "SELECT {} FROM event_entries WHERE event_id = $1 ORDER BY seed ASC NULLS LAST", ENTRY_COLS
+    ))
     .bind(id)
     .fetch_all(pool)
     .await?;
@@ -166,9 +170,10 @@ pub async fn get_event(pool: &PgPool, id: Uuid) -> Result<EventDetail, AppError>
 }
 
 pub async fn create_event(pool: &PgPool, input: CreateEventInput) -> Result<Event, AppError> {
-    let event: Event = sqlx::query_as(
-        "INSERT INTO events (name, series, season, start_date, end_date, location, status, logo_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *"
-    )
+    let event: Event = sqlx::query_as(&format!(
+        "INSERT INTO events (name, series, season, start_date, end_date, location, status, logo_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING {}",
+        EVENT_COLS
+    ))
     .bind(&input.name)
     .bind(&input.series)
     .bind(&input.season)
@@ -187,15 +192,16 @@ pub async fn update_event(
     id: Uuid,
     input: UpdateEventInput,
 ) -> Result<Event, AppError> {
-    let existing: Event = sqlx::query_as("SELECT * FROM events WHERE id = $1")
+    let existing: Event = sqlx::query_as(&format!("SELECT {} FROM events WHERE id = $1", EVENT_COLS))
         .bind(id)
         .fetch_optional(pool)
         .await?
         .ok_or_else(|| AppError::NotFound("Event not found".into()))?;
 
-    let event: Event = sqlx::query_as(
-        "UPDATE events SET name = $1, series = $2, season = $3, start_date = $4, end_date = $5, location = $6, status = $7, logo_url = $8, updated_at = now() WHERE id = $9 RETURNING *"
-    )
+    let event: Event = sqlx::query_as(&format!(
+        "UPDATE events SET name = $1, series = $2, season = $3, start_date = $4, end_date = $5, location = $6, status = $7, logo_url = $8, updated_at = now() WHERE id = $9 RETURNING {}",
+        EVENT_COLS
+    ))
     .bind(input.name.as_deref().unwrap_or(&existing.name))
     .bind(input.series.as_deref().unwrap_or(&existing.series))
     .bind(input.season.as_deref().unwrap_or(&existing.season))
@@ -234,9 +240,10 @@ pub async fn create_stage(
         return Err(AppError::NotFound("Event not found".into()));
     }
 
-    let stage: EventStage = sqlx::query_as(
-        "INSERT INTO event_stages (event_id, name, stage_format, stage_type, order_index, start_date, end_date) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *"
-    )
+    let stage: EventStage = sqlx::query_as(&format!(
+        "INSERT INTO event_stages (event_id, name, stage_format, stage_type, order_index, start_date, end_date) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING {}",
+        STAGE_COLS
+    ))
     .bind(event_id)
     .bind(&input.name)
     .bind(&input.stage_format)

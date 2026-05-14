@@ -210,3 +210,53 @@ export const EVENT_STATUS_LABELS: Record<string, string> = {
   ongoing: "进行中",
   concluded: "已结束",
 };
+
+export interface StageStandingsRow {
+  rank: number;
+  team_id: string;
+  team_name: string;
+  team_abbreviation?: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  map_wins: number;
+  map_losses: number;
+  points: number;
+  buchholz?: number;
+  record: string;
+}
+
+export interface StageMatchCard {
+  match_id: string;
+  team_a: { id: string; name: string; abbreviation?: string };
+  team_b: { id: string; name: string; abbreviation?: string };
+  score_a?: number;
+  score_b?: number;
+  status: string;
+  scheduled_at?: string;
+}
+
+export interface StageRoundMatches {
+  round: number;
+  label: string;
+  matches: StageMatchCard[];
+}
+
+export interface StageOverview {
+  stage_id: string;
+  stage_name: string;
+  stage_format: string;
+  stage_type: string;
+  total_teams: number;
+  total_matches: number;
+  completed_matches: number;
+  standings: StageStandingsRow[];
+  rounds: StageRoundMatches[];
+}
+
+export const STAGE_FORMAT_LABELS: Record<string, string> = {
+  swiss: "瑞士轮",
+  round_robin: "小组循环",
+  single_elim: "单败淘汰",
+  double_elim: "双败淘汰",
+};

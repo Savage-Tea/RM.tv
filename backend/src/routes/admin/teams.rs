@@ -33,6 +33,6 @@ async fn update_team(
 pub fn routes() -> Router<Pool> {
     Router::new()
         .route("/", post(create_team))
-        .route("/{id}", put(update_team))
+        .route("/:id", put(update_team))
         .route_layer(axum::middleware::from_fn_with_state((), require_auth))
 }

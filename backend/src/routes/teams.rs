@@ -42,5 +42,5 @@ async fn get_team(
 pub fn routes() -> Router<Pool> {
     Router::new()
         .route("/", get(list_teams))
-        .route("/{id}", get(get_team))
+        .route("/:id", get(get_team))
 }

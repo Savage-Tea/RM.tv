@@ -76,7 +76,7 @@ pub async fn list_matches(
         r#"SELECT m.id, m.event_id, e.name as event_name,
            m.team_a_id, ta.name as team_a_name,
            m.team_b_id, tb.name as team_b_name,
-           m.score_a, m.score_b, m.format, m.status,
+           m.score_a, m.score_b, m.format::text AS format, m.status::text AS status,
            m.scheduled_at, m.group_name
            FROM matches m
            JOIN teams ta ON m.team_a_id = ta.id
@@ -85,7 +85,7 @@ pub async fn list_matches(
            WHERE ($1::uuid IS NULL OR m.event_id = $1)
              AND ($2::uuid IS NULL OR m.stage_id = $2)
              AND ($3::uuid IS NULL OR m.team_a_id = $3 OR m.team_b_id = $3)
-             AND ($4::text IS NULL OR m.status = $4)
+             AND ($4::text IS NULL OR m.status::text = $4)
            ORDER BY {} {}
            LIMIT $5 OFFSET $6"#,
         sort_col, sort_order
@@ -97,7 +97,7 @@ pub async fn list_matches(
            WHERE ($1::uuid IS NULL OR m.event_id = $1)
              AND ($2::uuid IS NULL OR m.stage_id = $2)
              AND ($3::uuid IS NULL OR m.team_a_id = $3 OR m.team_b_id = $3)
-             AND ($4::text IS NULL OR m.status = $4)"#,
+             AND ($4::text IS NULL OR m.status::text = $4)"#,
     )
     .bind(event_id)
     .bind(stage_id)
@@ -120,7 +120,9 @@ pub async fn list_matches(
 }
 
 pub async fn get_match(pool: &PgPool, id: Uuid) -> Result<MatchDetail, AppError> {
-    let match_data: Match = sqlx::query_as("SELECT * FROM matches WHERE id = $1")
+    let match_data: Match = sqlx::query_as(
+        "SELECT id, event_id, stage_id, team_a_id, team_b_id, score_a, score_b, format::text AS format, status::text AS status, scheduled_at, started_at, finished_at, bracket_position, round, group_name, vod_url, created_at FROM matches WHERE id = $1"
+    )
         .bind(id)
         .fetch_optional(pool)
         .await?
@@ -133,7 +135,7 @@ pub async fn get_match(pool: &PgPool, id: Uuid) -> Result<MatchDetail, AppError>
             .await?;
 
     let participants: Vec<MatchParticipant> =
-        sqlx::query_as("SELECT * FROM match_participants WHERE match_id = $1")
+        sqlx::query_as("SELECT id, match_id, team_id, member_id, robot_type::text AS robot_type FROM match_participants WHERE match_id = $1")
             .bind(id)
             .fetch_all(pool)
             .await?;
@@ -142,7 +144,7 @@ pub async fn get_match(pool: &PgPool, id: Uuid) -> Result<MatchDetail, AppError>
     let mut robot_stats = Vec::new();
     for map_id in &map_ids {
         let stats: Vec<MapRobotStats> =
-            sqlx::query_as("SELECT * FROM map_robot_stats WHERE match_map_id = $1")
+            sqlx::query_as("SELECT id, match_map_id, member_id, robot_type::text AS robot_type, kills, deaths, damage, hp_healed, base_damage, alive_time_seconds FROM map_robot_stats WHERE match_map_id = $1")
                 .bind(map_id)
                 .fetch_all(pool)
                 .await?;
@@ -159,7 +161,7 @@ pub async fn get_match(pool: &PgPool, id: Uuid) -> Result<MatchDetail, AppError>
 
 pub async fn create_match(pool: &PgPool, input: CreateMatchInput) -> Result<Match, AppError> {
     let m: Match = sqlx::query_as(
-        "INSERT INTO matches (event_id, stage_id, team_a_id, team_b_id, format, scheduled_at, bracket_position, round, group_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *"
+        "INSERT INTO matches (event_id, stage_id, team_a_id, team_b_id, format, scheduled_at, bracket_position, round, group_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, event_id, stage_id, team_a_id, team_b_id, score_a, score_b, format::text AS format, status::text AS status, scheduled_at, started_at, finished_at, bracket_position, round, group_name, vod_url, created_at"
     )
     .bind(input.event_id)
     .bind(input.stage_id)
@@ -180,14 +182,14 @@ pub async fn update_match(
     id: Uuid,
     input: UpdateMatchInput,
 ) -> Result<Match, AppError> {
-    let existing: Match = sqlx::query_as("SELECT * FROM matches WHERE id = $1")
+    let existing: Match = sqlx::query_as("SELECT id, event_id, stage_id, team_a_id, team_b_id, score_a, score_b, format::text AS format, status::text AS status, scheduled_at, started_at, finished_at, bracket_position, round, group_name, vod_url, created_at FROM matches WHERE id = $1")
         .bind(id)
         .fetch_optional(pool)
         .await?
         .ok_or_else(|| AppError::NotFound("Match not found".into()))?;
 
     let m: Match = sqlx::query_as(
-        "UPDATE matches SET score_a = $1, score_b = $2, status = $3, scheduled_at = $4, started_at = $5, finished_at = $6, bracket_position = $7, round = $8, group_name = $9 WHERE id = $10 RETURNING *"
+        "UPDATE matches SET score_a = $1, score_b = $2, status = $3, scheduled_at = $4, started_at = $5, finished_at = $6, bracket_position = $7, round = $8, group_name = $9 WHERE id = $10 RETURNING id, event_id, stage_id, team_a_id, team_b_id, score_a, score_b, format::text AS format, status::text AS status, scheduled_at, started_at, finished_at, bracket_position, round, group_name, vod_url, created_at"
     )
     .bind(input.score_a.or(existing.score_a))
     .bind(input.score_b.or(existing.score_b))

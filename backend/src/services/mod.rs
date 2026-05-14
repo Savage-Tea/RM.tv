@@ -6,6 +6,7 @@ pub mod progression;
 pub mod ranking_service;
 pub mod rating_service;
 pub mod round_robin;
+pub mod stage_service;
 pub mod stats_service;
 pub mod swiss;
 pub mod team_service;
