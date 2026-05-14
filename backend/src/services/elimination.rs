@@ -32,7 +32,7 @@ pub fn build_single_elim_bracket(
             let next_round = next_round(round, round_order);
             let winner_to = next_round.map(|r| {
                 let idx = match_index(&m.bracket_position);
-                format!("{}{}", r, (idx + 1).div_ceil(2))
+                format!("{}{}", r, idx.div_ceil(2))
             });
 
             nodes.push(BracketNode {
@@ -73,7 +73,7 @@ pub fn build_double_elim_bracket(
             let next_round = next_round(round, round_order);
             let winner_to = next_round.map(|r| {
                 let idx = match_index(&m.bracket_position);
-                format!("{}{}", r, (idx + 1).div_ceil(2))
+                format!("{}{}", r, idx.div_ceil(2))
             });
 
             upper_nodes.push(BracketNode {
