@@ -3,3 +3,7 @@ pub mod event_service;
 pub mod match_service;
 pub mod ranking_service;
 pub mod stats_service;
+pub mod round_robin;
+pub mod swiss;
+pub mod elimination;
+pub mod progression;
