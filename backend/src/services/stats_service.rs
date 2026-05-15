@@ -24,12 +24,12 @@ pub async fn list_robot_ratings(
         "DESC"
     };
 
-    let cols = "rr.id, rr.team_id, rr.member_id, rr.robot_type::text AS robot_type, rr.season, rr.rating::float8 AS rating, rr.matches_played, rr.updated_at";
+    let cols = "rr.id, rr.team_id, t.name AS team_name, t.abbreviation AS team_abbreviation, rr.member_id, rr.robot_type::text AS robot_type, rr.season, rr.rating::float8 AS rating, rr.matches_played, rr.updated_at";
 
     let (total, ratings) = match robot_type {
         Some(rt) => {
             let total: (i64,) = sqlx::query_as(
-                "SELECT COUNT(*) FROM robot_rating rr WHERE rr.season = $1 AND rr.robot_type::text = $2",
+                "SELECT COUNT(*) FROM robot_rating rr JOIN teams t ON rr.team_id = t.id WHERE rr.season = $1 AND rr.robot_type::text = $2",
             )
             .bind(season)
             .bind(rt)
@@ -37,7 +37,7 @@ pub async fn list_robot_ratings(
             .await?;
 
             let ratings: Vec<RobotRating> = sqlx::query_as(&format!(
-                "SELECT {} FROM robot_rating rr WHERE rr.season = $1 AND rr.robot_type::text = $2 ORDER BY {} {} LIMIT $3 OFFSET $4",
+                "SELECT {} FROM robot_rating rr JOIN teams t ON rr.team_id = t.id WHERE rr.season = $1 AND rr.robot_type::text = $2 ORDER BY {} {} LIMIT $3 OFFSET $4",
                 cols, sort_col, sort_order
             ))
             .bind(season).bind(rt).bind(per_page).bind(offset)
@@ -47,13 +47,13 @@ pub async fn list_robot_ratings(
         }
         None => {
             let total: (i64,) =
-                sqlx::query_as("SELECT COUNT(*) FROM robot_rating rr WHERE rr.season = $1")
+                sqlx::query_as("SELECT COUNT(*) FROM robot_rating rr JOIN teams t ON rr.team_id = t.id WHERE rr.season = $1")
                     .bind(season)
                     .fetch_one(pool)
                     .await?;
 
             let ratings: Vec<RobotRating> = sqlx::query_as(&format!(
-                "SELECT {} FROM robot_rating rr WHERE rr.season = $1 ORDER BY {} {} LIMIT $2 OFFSET $3",
+                "SELECT {} FROM robot_rating rr JOIN teams t ON rr.team_id = t.id WHERE rr.season = $1 ORDER BY {} {} LIMIT $2 OFFSET $3",
                 cols, sort_col, sort_order
             ))
             .bind(season).bind(per_page).bind(offset)

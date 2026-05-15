@@ -59,14 +59,35 @@ export function MatchesPage() {
                 <div className="flex-1 text-right">
                   <div className="font-medium">{m.team_a_name}</div>
                 </div>
-                <div className="text-center">
-                  <ScoreDisplay scoreA={m.score_a} scoreB={m.score_b} winner={winner} />
+                <div className="flex flex-col items-center justify-center min-w-28 min-h-[4.5rem] gap-1">
+                  {m.status === "scheduled" ? (
+                    m.scheduled_at ? (
+                      <>
+                        <div className="text-lg font-semibold text-primary leading-none">
+                          {new Date(m.scheduled_at).toLocaleTimeString("zh-CN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {new Date(m.scheduled_at).toLocaleDateString("zh-CN", {
+                            month: "numeric",
+                            day: "numeric",
+                          })}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">待确认</div>
+                    )
+                  ) : (
+                    <ScoreDisplay scoreA={m.score_a} scoreB={m.score_b} winner={winner} />
+                  )}
                   <StatusBadge status={m.status} />
                 </div>
                 <div className="flex-1">
                   <div className="font-medium">{m.team_b_name}</div>
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground text-center min-w-24">
                   {m.event_name}
                   {m.group_name && ` · ${m.group_name}`}
                   <div>{m.format?.toUpperCase()}</div>

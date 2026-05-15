@@ -7,10 +7,10 @@ import { DataTable } from "@/components/shared/DataTable";
 import type { Column } from "@/components/shared/DataTable";
 import type { RankingEntry } from "@/types";
 
-const SEASONS = ["2025", "2024", "2023", "2022", "2021", "2020", "2019"];
+const SEASONS = ["2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019"];
 
 export function RankingsPage() {
-  const [season, setSeason] = useState("2025");
+  const [season, setSeason] = useState("2026");
 
   const rankings = useQuery({
     queryKey: ["rankings", season],

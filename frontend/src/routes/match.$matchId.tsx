@@ -136,6 +136,48 @@ export function MatchDetailPage() {
                 <TableCell className="font-medium">赛制</TableCell>
                 <TableCell>{m.format?.toUpperCase()}</TableCell>
               </TableRow>
+              {m.scheduled_at && (
+                <TableRow>
+                  <TableCell className="font-medium w-32">预定时间</TableCell>
+                  <TableCell>
+                    {new Date(m.scheduled_at).toLocaleString("zh-CN", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </TableCell>
+                </TableRow>
+              )}
+              {m.started_at && (
+                <TableRow>
+                  <TableCell className="font-medium w-32">开始时间</TableCell>
+                  <TableCell>
+                    {new Date(m.started_at).toLocaleString("zh-CN", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </TableCell>
+                </TableRow>
+              )}
+              {m.finished_at && (
+                <TableRow>
+                  <TableCell className="font-medium w-32">结束时间</TableCell>
+                  <TableCell>
+                    {new Date(m.finished_at).toLocaleString("zh-CN", {
+                      year: "numeric",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </TableCell>
+                </TableRow>
+              )}
               {m.group_name && (
                 <TableRow>
                   <TableCell className="font-medium">小组</TableCell>

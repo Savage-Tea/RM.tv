@@ -28,6 +28,12 @@ export interface MemberRobotRole {
   is_primary: boolean;
 }
 
+export interface TeamRobotRating {
+  robot_type: string;
+  rating?: number;
+  matches_played?: number;
+}
+
 export interface TeamDetail {
   id: string;
   name: string;
@@ -38,6 +44,8 @@ export interface TeamDetail {
   founded_year?: number;
   description?: string;
   members: TeamMemberWithRoles[];
+  robot_ratings: TeamRobotRating[];
+  recent_matches: MatchSummary[];
 }
 
 export interface TeamMemberWithRoles {
@@ -179,6 +187,8 @@ export interface TeamEloHistory {
 export interface RobotRating {
   id: string;
   team_id: string;
+  team_name: string;
+  team_abbreviation?: string;
   member_id: string;
   robot_type: string;
   season: string;

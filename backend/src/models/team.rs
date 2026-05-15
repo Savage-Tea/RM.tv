@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
+use crate::models::MatchSummary;
+
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Team {
     pub id: Uuid,
@@ -42,6 +44,8 @@ pub struct TeamDetail {
     #[serde(flatten)]
     pub team: Team,
     pub members: Vec<TeamMemberWithRoles>,
+    pub robot_ratings: Vec<TeamRobotRating>,
+    pub recent_matches: Vec<MatchSummary>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,4 +53,11 @@ pub struct TeamMemberWithRoles {
     #[serde(flatten)]
     pub member: TeamMember,
     pub robot_roles: Vec<MemberRobotRole>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct TeamRobotRating {
+    pub robot_type: String,
+    pub rating: Option<f64>,
+    pub matches_played: Option<i32>,
 }

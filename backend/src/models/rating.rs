@@ -42,6 +42,8 @@ pub struct RatingConfig {
 pub struct RobotRating {
     pub id: Uuid,
     pub team_id: Uuid,
+    pub team_name: String,
+    pub team_abbreviation: Option<String>,
     pub member_id: Uuid,
     pub robot_type: String,
     pub season: String,

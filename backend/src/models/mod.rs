@@ -10,4 +10,4 @@ pub use event::{Event, EventDetail, EventEntry, EventStage, EventStageProgressio
 pub use r#match::{MapRobotStats, Match, MatchDetail, MatchMap, MatchParticipant, MatchSummary};
 pub use rating::{RankingEntry, RobotRating, TeamEloHistory};
 pub use standings::StageStandings;
-pub use team::{MemberRobotRole, Team, TeamDetail, TeamMember, TeamMemberWithRoles};
+pub use team::{MemberRobotRole, Team, TeamDetail, TeamMember, TeamMemberWithRoles, TeamRobotRating};
