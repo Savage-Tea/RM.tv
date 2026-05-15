@@ -237,6 +237,7 @@ pub fn compute_robot_rating(
 
 /// Convenience: compute rating from per-field values, falling back to KDA-only if
 /// most fields are zero (pre-season / no-match data).
+#[allow(clippy::too_many_arguments)]
 pub fn compute_robot_rating_from_kda(
     robot_type: &str,
     kda_score: f64, // eaKdaScore from CDN
