@@ -106,6 +106,22 @@ fi
 # ── 7. Start frontend ──────────────────────────────────────────
 echo_step "Starting frontend (port 5173)..."
 cd "$PROJECT_DIR/frontend"
+
+# Fix npm bug with optional/native dependencies (rolldown binding)
+if [ -d node_modules ] && [ ! -f node_modules/.deps-ok ]; then
+    BINDING="node_modules/rolldown/dist/shared/rolldown-binding.linux-x64-gnu.node"
+    if ! node -e "require('rolldown')" 2>/dev/null; then
+        echo_warn "Native binding missing, reinstalling dependencies..."
+        rm -rf node_modules package-lock.json
+        npm install
+        touch node_modules/.deps-ok
+    else
+        touch node_modules/.deps-ok
+    fi
+elif [ ! -d node_modules ]; then
+    npm install
+fi
+
 npm run dev -- --host 0.0.0.0 &
 FRONTEND_PID=$!
 echo "   Frontend PID: $FRONTEND_PID"
