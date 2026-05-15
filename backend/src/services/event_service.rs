@@ -160,7 +160,8 @@ pub async fn get_event(pool: &PgPool, id: Uuid) -> Result<EventDetail, AppError>
     .await?;
 
     let entries: Vec<EventEntrySummary> = sqlx::query_as(
-        "SELECT ee.id, ee.event_id, ee.team_id, t.name AS team_name, t.abbreviation AS team_abbreviation, ee.seed \
+        "SELECT ee.id, ee.event_id, ee.team_id, t.name AS team_name, t.abbreviation AS team_abbreviation, \
+                t.university, t.logo_url, ee.seed \
          FROM event_entries ee \
          JOIN teams t ON ee.team_id = t.id \
          WHERE ee.event_id = $1 \

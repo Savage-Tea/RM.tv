@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { TeamLogo } from "@/components/shared/TeamLogo";
 import { StandingsTable } from "@/components/events/StandingsTable";
 import { StageMatches } from "@/components/events/StageMatches";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -121,6 +122,7 @@ export function EventDetailPage() {
               <TableRow>
                 <TableHead className="w-16">种子</TableHead>
                 <TableHead>战队</TableHead>
+                <TableHead>学校</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -130,13 +132,24 @@ export function EventDetailPage() {
                     {entry.seed ?? "-"}
                   </TableCell>
                   <TableCell>
-                    <Link
-                      to="/teams/$teamId"
-                      params={{ teamId: entry.team_id }}
-                      className="text-primary hover:underline"
-                    >
-                      {entry.team_abbreviation ?? entry.team_name}
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <TeamLogo
+                        name={entry.team_name}
+                        abbreviation={entry.team_abbreviation}
+                        logoUrl={entry.logo_url}
+                        size="sm"
+                      />
+                      <Link
+                        to="/teams/$teamId"
+                        params={{ teamId: entry.team_id }}
+                        className="text-primary hover:underline font-medium"
+                      >
+                        {entry.team_name}
+                      </Link>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {entry.university}
                   </TableCell>
                 </TableRow>
               ))}

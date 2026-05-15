@@ -86,6 +86,8 @@ export interface EventEntry {
   team_id: string;
   team_name: string;
   team_abbreviation?: string;
+  university: string;
+  logo_url?: string;
   seed?: number;
 }
 

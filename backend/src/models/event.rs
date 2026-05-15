@@ -56,6 +56,8 @@ pub struct EventEntrySummary {
     pub team_id: Uuid,
     pub team_name: String,
     pub team_abbreviation: Option<String>,
+    pub university: String,
+    pub logo_url: Option<String>,
     pub seed: Option<i32>,
 }
 
