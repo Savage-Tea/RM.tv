@@ -34,24 +34,53 @@ export PATH="$HOME/.cargo/bin:$PATH"
 log "Rust: $(rustc --version)"
 
 # ── Node.js ────────────────────────────────────────────────────────
-# Always use nvm to ensure a compatible Node version (22+ for TypeScript 6.0)
-export NVM_DIR="$HOME/.nvm"
-
-if [ ! -s "$NVM_DIR/nvm.sh" ]; then
-    log "安装 nvm..."
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-fi
-
-[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-
+# TypeScript 6.0 requires Node.js 22+
 NODE_MIN=22
-if ! command -v node >/dev/null 2>&1 || [ "$(node -v | sed 's/v\([0-9]*\).*/\1/')" -lt "$NODE_MIN" ]; then
-    log "安装 Node.js $NODE_MIN+ LTS..."
-    nvm install --lts
-    nvm alias default lts/*
+NEED_NODE=0
+if ! command -v node >/dev/null 2>&1; then
+    NEED_NODE=1
+elif [ "$(node -v | sed 's/v\([0-9]*\).*/\1/')" -lt "$NODE_MIN" ]; then
+    NEED_NODE=1
 fi
-nvm use --lts 2>/dev/null || nvm use default
+
+if [ "$NEED_NODE" = "1" ]; then
+    log "安装 Node.js 22+..."
+
+    # Method 1: try nvm
+    export NVM_DIR="$HOME/.nvm"
+    if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+        curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash 2>/dev/null || true
+    fi
+    if [ -s "$NVM_DIR/nvm.sh" ]; then
+        . "$NVM_DIR/nvm.sh"
+        nvm install --lts
+        nvm alias default lts/*
+        nvm use --lts 2>/dev/null || nvm use default
+    fi
+
+    # Method 2: if nvm didn't work, install Node.js binary directly
+    if ! command -v node >/dev/null 2>&1 || [ "$(node -v | sed 's/v\([0-9]*\).*/\1/')" -lt "$NODE_MIN" ]; then
+        NODE_VERSION="22.14.0"
+        log "nvm 不可用，直接下载 Node.js v${NODE_VERSION}..."
+        NODE_ARCH="linux-x64"
+        NODE_TAR="node-v${NODE_VERSION}-${NODE_ARCH}.tar.xz"
+        NODE_URL="https://nodejs.org/dist/v${NODE_VERSION}/${NODE_TAR}"
+
+        curl -fsSL "$NODE_URL" -o "/tmp/${NODE_TAR}"
+        tar -xJf "/tmp/${NODE_TAR}" -C "$HOME"
+        mv "$HOME/node-v${NODE_VERSION}-${NODE_ARCH}" "$HOME/.nodejs"
+
+        export PATH="$HOME/.nodejs/bin:$PATH"
+        rm -f "/tmp/${NODE_TAR}"
+    fi
+fi
+
 log "Node.js: $(node --version)"
+
+# Ensure Node.js bin directory stays on PATH for rest of script
+if [ -d "$HOME/.nodejs/bin" ]; then
+    export PATH="$HOME/.nodejs/bin:$PATH"
+fi
 
 # Install sqlx-cli if missing
 if ! command -v sqlx >/dev/null 2>&1; then
