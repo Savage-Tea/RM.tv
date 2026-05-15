@@ -52,7 +52,7 @@ fi
 # ── 3. Seed admin user ─────────────────────────────────────────
 echo_step "Seeding admin user..."
 ADMIN_EXISTS=$(docker compose exec -T db psql -U rmtv -d rmtv -t -c \
-    "SELECT count(*) FROM admin_users WHERE username = 'admin';" 2>/dev/null | tr -d ' ')
+    "SELECT count(*) FROM admin_users WHERE username = 'admin';" 2>/dev/null | tr -d ' ' || echo "0")
 
 if [ "${ADMIN_EXISTS:-0}" = "0" ]; then
     python3 -c "
