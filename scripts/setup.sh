@@ -17,11 +17,27 @@ log "RM.tv 一键环境配置"
 # ── Prerequisites ──────────────────────────────────────────────────
 log "检查前置依赖..."
 
-command -v docker  >/dev/null 2>&1 || err "请先安装 Docker: https://docs.docker.com/engine/install/"
-command -v rustc   >/dev/null 2>&1 || err "请先安装 Rust: https://rustup.rs"
-command -v cargo   >/dev/null 2>&1 || err "cargo 未找到"
-command -v node    >/dev/null 2>&1 || err "请先安装 Node.js: https://nodejs.org"
-command -v npm     >/dev/null 2>&1 || err "npm 未找到"
+command -v docker >/dev/null 2>&1 || err "请先安装 Docker: https://docs.docker.com/engine/install/"
+command -v python3 >/dev/null 2>&1 || err "请先安装 Python 3"
+
+# ── Rust ───────────────────────────────────────────────────────────
+if ! command -v rustc >/dev/null 2>&1; then
+    log "安装 Rust 工具链..."
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    . "$HOME/.cargo/env"
+fi
+log "Rust: $(rustc --version)"
+
+# ── Node.js ────────────────────────────────────────────────────────
+if ! command -v node >/dev/null 2>&1; then
+    log "安装 Node.js (via nvm)..."
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+    nvm install --lts
+    nvm use --lts
+fi
+log "Node.js: $(node --version)"
 
 # Install sqlx-cli if missing
 if ! command -v sqlx >/dev/null 2>&1; then
