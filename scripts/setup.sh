@@ -24,8 +24,13 @@ command -v python3 >/dev/null 2>&1 || err "请先安装 Python 3"
 if ! command -v rustc >/dev/null 2>&1; then
     log "安装 Rust 工具链..."
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+fi
+
+# Ensure cargo binaries are on PATH (both fresh install and pre-existing)
+if [ -f "$HOME/.cargo/env" ]; then
     . "$HOME/.cargo/env"
 fi
+export PATH="$HOME/.cargo/bin:$PATH"
 log "Rust: $(rustc --version)"
 
 # ── Node.js ────────────────────────────────────────────────────────
@@ -43,6 +48,9 @@ log "Node.js: $(node --version)"
 if ! command -v sqlx >/dev/null 2>&1; then
     log "安装 sqlx-cli..."
     cargo install sqlx-cli --no-default-features --features postgres,rustls
+    if ! command -v sqlx >/dev/null 2>&1; then
+        err "sqlx-cli 安装失败，请检查 cargo install sqlx-cli 的输出"
+    fi
 fi
 
 # ── Docker PostgreSQL ──────────────────────────────────────────────
