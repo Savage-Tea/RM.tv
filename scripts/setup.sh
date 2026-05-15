@@ -34,14 +34,23 @@ export PATH="$HOME/.cargo/bin:$PATH"
 log "Rust: $(rustc --version)"
 
 # ── Node.js ────────────────────────────────────────────────────────
-if ! command -v node >/dev/null 2>&1; then
-    log "安装 Node.js (via nvm)..."
+# Always use nvm to ensure a compatible Node version (22+ for TypeScript 6.0)
+export NVM_DIR="$HOME/.nvm"
+
+if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+    log "安装 nvm..."
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-    export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-    nvm install --lts
-    nvm use --lts
 fi
+
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+
+NODE_MIN=22
+if ! command -v node >/dev/null 2>&1 || [ "$(node -v | sed 's/v\([0-9]*\).*/\1/')" -lt "$NODE_MIN" ]; then
+    log "安装 Node.js $NODE_MIN+ LTS..."
+    nvm install --lts
+    nvm alias default lts/*
+fi
+nvm use --lts 2>/dev/null || nvm use default
 log "Node.js: $(node --version)"
 
 # Install sqlx-cli if missing
