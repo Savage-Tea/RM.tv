@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::models::{Event, EventDetail, EventEntry, EventStage, PaginatedResponse};
+use crate::models::{Event, EventDetail, EventEntrySummary, EventStage, PaginatedResponse};
 use chrono::NaiveDate;
 use serde::Deserialize;
 use sqlx::PgPool;
@@ -159,10 +159,13 @@ pub async fn get_event(pool: &PgPool, id: Uuid) -> Result<EventDetail, AppError>
     .fetch_all(pool)
     .await?;
 
-    let entries: Vec<EventEntry> = sqlx::query_as(&format!(
-        "SELECT {} FROM event_entries WHERE event_id = $1 ORDER BY seed ASC NULLS LAST",
-        ENTRY_COLS
-    ))
+    let entries: Vec<EventEntrySummary> = sqlx::query_as(
+        "SELECT ee.id, ee.event_id, ee.team_id, t.name AS team_name, t.abbreviation AS team_abbreviation, ee.seed \
+         FROM event_entries ee \
+         JOIN teams t ON ee.team_id = t.id \
+         WHERE ee.event_id = $1 \
+         ORDER BY ee.seed ASC NULLS LAST",
+    )
     .bind(id)
     .fetch_all(pool)
     .await?;

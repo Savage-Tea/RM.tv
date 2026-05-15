@@ -6,7 +6,7 @@ pub mod standings;
 pub mod team;
 
 pub use common::PaginatedResponse;
-pub use event::{Event, EventDetail, EventEntry, EventStage, EventStageProgression};
+pub use event::{Event, EventDetail, EventEntry, EventEntrySummary, EventStage, EventStageProgression};
 pub use r#match::{MapRobotStats, Match, MatchDetail, MatchMap, MatchParticipant, MatchSummary};
 pub use rating::{RankingEntry, RobotRating, TeamEloHistory};
 pub use standings::StageStandings;

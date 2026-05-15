@@ -49,10 +49,20 @@ pub struct EventEntry {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct EventEntrySummary {
+    pub id: Uuid,
+    pub event_id: Uuid,
+    pub team_id: Uuid,
+    pub team_name: String,
+    pub team_abbreviation: Option<String>,
+    pub seed: Option<i32>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventDetail {
     #[serde(flatten)]
     pub event: Event,
     pub stages: Vec<EventStage>,
-    pub entries: Vec<EventEntry>,
+    pub entries: Vec<EventEntrySummary>,
 }

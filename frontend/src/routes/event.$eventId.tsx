@@ -1,4 +1,4 @@
-import { useParams } from "@tanstack/react-router";
+import { useParams, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { StatusBadge } from "@/components/shared/StatusBadge";
@@ -129,7 +129,15 @@ export function EventDetailPage() {
                   <TableCell className="text-muted-foreground">
                     {entry.seed ?? "-"}
                   </TableCell>
-                  <TableCell>{entry.team_id}</TableCell>
+                  <TableCell>
+                    <Link
+                      to="/teams/$teamId"
+                      params={{ teamId: entry.team_id }}
+                      className="text-primary hover:underline"
+                    >
+                      {entry.team_abbreviation ?? entry.team_name}
+                    </Link>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
