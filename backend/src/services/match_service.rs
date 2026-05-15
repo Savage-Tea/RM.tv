@@ -119,14 +119,72 @@ pub async fn list_matches(
     Ok(PaginatedResponse::new(matches, total.0, page, per_page))
 }
 
+#[derive(Debug, sqlx::FromRow)]
+struct MatchWithTeams {
+    id: Uuid,
+    event_id: Uuid,
+    stage_id: Option<Uuid>,
+    team_a_id: Uuid,
+    team_b_id: Uuid,
+    team_a_name: String,
+    team_b_name: String,
+    team_a_abbreviation: Option<String>,
+    team_b_abbreviation: Option<String>,
+    score_a: Option<i32>,
+    score_b: Option<i32>,
+    format: String,
+    status: String,
+    scheduled_at: Option<DateTime<Utc>>,
+    started_at: Option<DateTime<Utc>>,
+    finished_at: Option<DateTime<Utc>>,
+    bracket_position: Option<String>,
+    round: Option<i32>,
+    group_name: Option<String>,
+    vod_url: Option<String>,
+    created_at: DateTime<Utc>,
+}
+
 pub async fn get_match(pool: &PgPool, id: Uuid) -> Result<MatchDetail, AppError> {
-    let match_data: Match = sqlx::query_as(
-        "SELECT id, event_id, stage_id, team_a_id, team_b_id, score_a, score_b, format::text AS format, status::text AS status, scheduled_at, started_at, finished_at, bracket_position, round, group_name, vod_url, created_at FROM matches WHERE id = $1"
+    let row = sqlx::query_as::<_, MatchWithTeams>(
+        r#"SELECT m.id, m.event_id, m.stage_id,
+           m.team_a_id, m.team_b_id,
+           ta.name as team_a_name, tb.name as team_b_name,
+           ta.abbreviation as team_a_abbreviation,
+           tb.abbreviation as team_b_abbreviation,
+           m.score_a, m.score_b,
+           m.format::text AS format, m.status::text AS status,
+           m.scheduled_at, m.started_at, m.finished_at,
+           m.bracket_position, m.round, m.group_name,
+           m.vod_url, m.created_at
+           FROM matches m
+           JOIN teams ta ON m.team_a_id = ta.id
+           JOIN teams tb ON m.team_b_id = tb.id
+           WHERE m.id = $1"#,
     )
-        .bind(id)
-        .fetch_optional(pool)
-        .await?
-        .ok_or_else(|| AppError::NotFound("Match not found".into()))?;
+    .bind(id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound("Match not found".into()))?;
+
+    let match_data = Match {
+        id: row.id,
+        event_id: row.event_id,
+        stage_id: row.stage_id,
+        team_a_id: row.team_a_id,
+        team_b_id: row.team_b_id,
+        score_a: row.score_a,
+        score_b: row.score_b,
+        format: row.format,
+        status: row.status,
+        scheduled_at: row.scheduled_at,
+        started_at: row.started_at,
+        finished_at: row.finished_at,
+        bracket_position: row.bracket_position,
+        round: row.round,
+        group_name: row.group_name,
+        vod_url: row.vod_url,
+        created_at: row.created_at,
+    };
 
     let maps: Vec<MatchMap> =
         sqlx::query_as("SELECT * FROM match_maps WHERE match_id = $1 ORDER BY order_index")
@@ -153,6 +211,10 @@ pub async fn get_match(pool: &PgPool, id: Uuid) -> Result<MatchDetail, AppError>
 
     Ok(MatchDetail {
         match_data,
+        team_a_name: row.team_a_name,
+        team_b_name: row.team_b_name,
+        team_a_abbreviation: row.team_a_abbreviation,
+        team_b_abbreviation: row.team_b_abbreviation,
         maps,
         participants,
         robot_stats,

@@ -152,8 +152,14 @@ def compute_robot_rating(robot_type, kills, deaths, assists, damage, support, sp
 
 # ── Main import logic ──────────────────────────────────────────
 
-def import_data():
-    print("[+] Fetching JSON data...")
+def import_data(force=False):
+    if force:
+        print("[+] Fetching JSON data (force refresh)...")
+        import glob
+        for f in glob.glob("/tmp/rm_*.json"):
+            os.unlink(f)
+    else:
+        print("[+] Fetching JSON data...")
     robot_data = fetch_json("robot_data")
     group_rank = fetch_json("group_rank_info")
     schedule = fetch_json("schedule")
@@ -335,10 +341,10 @@ def import_data():
             status_map = {"DONE": "finished", "WAITING": "scheduled"}
             status = status_map.get(m.get("status", ""), "scheduled")
 
-            score_a = m.get("blueSideScore", 0)
-            score_b = m.get("redSideScore", 0)
-            map_wins_a = m.get("blueSideWinGameCount", 0)
-            map_wins_b = m.get("redSideWinGameCount", 0)
+            score_a = m.get("blueSideWinGameCount", 0)
+            score_b = m.get("redSideWinGameCount", 0)
+            map_wins_a = score_a
+            map_wins_b = score_b
             total_maps = m.get("planGameCount", 3)
 
             # Schedule time
@@ -353,7 +359,11 @@ def import_data():
                 """INSERT INTO matches (id, event_id, stage_id, team_a_id, team_b_id,
                    score_a, score_b, format, status, scheduled_at, round, group_name)
                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                   ON CONFLICT DO NOTHING""",
+                   ON CONFLICT (id) DO UPDATE SET
+                     score_a = EXCLUDED.score_a,
+                     score_b = EXCLUDED.score_b,
+                     status = EXCLUDED.status,
+                     finished_at = CASE WHEN EXCLUDED.status = 'finished' AND matches.finished_at IS NULL THEN now() ELSE matches.finished_at END""",
                 (match_id, event_id, sid, team_a_id, team_b_id,
                  score_a, score_b, f"bo{total_maps}", status, scheduled_at,
                  m.get("orderNumber", 1), f"{zone_id}"))
@@ -517,4 +527,5 @@ def import_data():
 
 
 if __name__ == "__main__":
-    import_data()
+    force = "--force" in sys.argv or "-f" in sys.argv
+    import_data(force=force)

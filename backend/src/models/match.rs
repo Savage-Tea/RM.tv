@@ -63,6 +63,10 @@ pub struct MapRobotStats {
 pub struct MatchDetail {
     #[serde(flatten)]
     pub match_data: Match,
+    pub team_a_name: String,
+    pub team_b_name: String,
+    pub team_a_abbreviation: Option<String>,
+    pub team_b_abbreviation: Option<String>,
     pub maps: Vec<MatchMap>,
     pub participants: Vec<MatchParticipant>,
     pub robot_stats: Vec<MapRobotStats>,

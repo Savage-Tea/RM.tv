@@ -86,17 +86,13 @@ fn detect_format(matches: &[MatchRow], db_format: &str) -> String {
         return "swiss".to_string();
     }
 
-    let mut rounds: Vec<i32> = matches
-        .iter()
-        .filter_map(|m| m.round)
-        .collect();
+    let mut rounds: Vec<i32> = matches.iter().filter_map(|m| m.round).collect();
     rounds.sort();
     rounds.dedup();
 
     // If round numbers jump by >8, it's Swiss with interleaved groups
     // (CDN format: Group A uses 1-8, 17-24, 33-40... Group B uses 9-16, 25-32...)
-    let has_large_jump = rounds.len() > 1
-        && rounds.windows(2).any(|w| w[1] - w[0] > 8);
+    let has_large_jump = rounds.len() > 1 && rounds.windows(2).any(|w| w[1] - w[0] > 8);
 
     if has_large_jump {
         "swiss".to_string()
@@ -109,10 +105,7 @@ fn detect_format(matches: &[MatchRow], db_format: &str) -> String {
 
 // ── Computation ────────────────────────────────────────────────────
 
-pub async fn get_stage_overview(
-    pool: &PgPool,
-    stage_id: Uuid,
-) -> Result<StageOverview, AppError> {
+pub async fn get_stage_overview(pool: &PgPool, stage_id: Uuid) -> Result<StageOverview, AppError> {
     let stage: (Uuid, String, String, String) = sqlx::query_as(
         "SELECT id, name, stage_format::text, stage_type::text FROM event_stages WHERE id = $1",
     )
@@ -213,22 +206,24 @@ fn compute_standings_from_matches(
 
         // First pass: ensure all entries exist and accumulate map scores
         for m in &swiss_matches {
-            raw.entry(m.team_a_id).or_insert_with(|| swiss::SwissStanding {
-                team_id: m.team_a_id,
-                wins: 0,
-                losses: 0,
-                map_wins: 0,
-                map_losses: 0,
-                points: 0,
-            });
-            raw.entry(m.team_b_id).or_insert_with(|| swiss::SwissStanding {
-                team_id: m.team_b_id,
-                wins: 0,
-                losses: 0,
-                map_wins: 0,
-                map_losses: 0,
-                points: 0,
-            });
+            raw.entry(m.team_a_id)
+                .or_insert_with(|| swiss::SwissStanding {
+                    team_id: m.team_a_id,
+                    wins: 0,
+                    losses: 0,
+                    map_wins: 0,
+                    map_losses: 0,
+                    points: 0,
+                });
+            raw.entry(m.team_b_id)
+                .or_insert_with(|| swiss::SwissStanding {
+                    team_id: m.team_b_id,
+                    wins: 0,
+                    losses: 0,
+                    map_wins: 0,
+                    map_losses: 0,
+                    points: 0,
+                });
         }
 
         // Second pass: update stats
@@ -267,22 +262,24 @@ fn compute_standings_from_matches(
 
         // Also include teams that haven't played yet
         for m in matches {
-            raw.entry(m.team_a_id).or_insert_with(|| swiss::SwissStanding {
-                team_id: m.team_a_id,
-                wins: 0,
-                losses: 0,
-                map_wins: 0,
-                map_losses: 0,
-                points: 0,
-            });
-            raw.entry(m.team_b_id).or_insert_with(|| swiss::SwissStanding {
-                team_id: m.team_b_id,
-                wins: 0,
-                losses: 0,
-                map_wins: 0,
-                map_losses: 0,
-                points: 0,
-            });
+            raw.entry(m.team_a_id)
+                .or_insert_with(|| swiss::SwissStanding {
+                    team_id: m.team_a_id,
+                    wins: 0,
+                    losses: 0,
+                    map_wins: 0,
+                    map_losses: 0,
+                    points: 0,
+                });
+            raw.entry(m.team_b_id)
+                .or_insert_with(|| swiss::SwissStanding {
+                    team_id: m.team_b_id,
+                    wins: 0,
+                    losses: 0,
+                    map_wins: 0,
+                    map_losses: 0,
+                    points: 0,
+                });
         }
 
         let mut standings: Vec<_> = raw.into_values().collect();
@@ -293,9 +290,7 @@ fn compute_standings_from_matches(
             b.points.cmp(&a.points).then_with(|| {
                 let bh_a = buchholz.get(&a.team_id).copied().unwrap_or(0.0);
                 let bh_b = buchholz.get(&b.team_id).copied().unwrap_or(0.0);
-                bh_b
-                    .partial_cmp(&bh_a)
-                    .unwrap_or(std::cmp::Ordering::Equal)
+                bh_b.partial_cmp(&bh_a).unwrap_or(std::cmp::Ordering::Equal)
             })
         });
 
@@ -373,8 +368,7 @@ fn group_matches_by_round(matches: &[MatchRow]) -> Vec<StageRoundMatches> {
 
     // Detect Swiss-style interleaving: round numbers jump by >8 between
     // batches. E.g., Group A rounds: 1-8, 17-24, 33-40, 49-54.
-    let is_swiss = round_order.len() > 1
-        && round_order.windows(2).any(|w| w[1] - w[0] > 8);
+    let is_swiss = round_order.len() > 1 && round_order.windows(2).any(|w| w[1] - w[0] > 8);
 
     if !is_swiss {
         // Round Robin: each round is a separate display group
@@ -393,9 +387,7 @@ fn group_matches_by_round(matches: &[MatchRow]) -> Vec<StageRoundMatches> {
     let mut current_batch: Vec<i32> = Vec::new();
 
     for &r in &round_order {
-        if current_batch.is_empty()
-            || r - current_batch.last().unwrap() <= 8
-        {
+        if current_batch.is_empty() || r - current_batch.last().unwrap() <= 8 {
             current_batch.push(r);
         } else {
             batches.push(std::mem::take(&mut current_batch));
@@ -451,26 +443,44 @@ fn collect_round_matches(matches: &[MatchRow], rounds: &[i32]) -> Vec<StageMatch
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
-    fn test_group_matches_swiss_style() {
-        // Simulate CDN-style round numbering (interleaved groups)
-        let matches = vec![
-            // These would need to be real MatchRow values, but we test the concept
-        ];
-        // Swiss-style detection: rounds jump by >10
-        let round_order = vec![1, 2, 17, 18, 33, 34];
-        let is_swiss = round_order.len() > 1
-            && round_order.windows(2).any(|w| w[1] - w[0] > 10);
+    fn test_detect_swiss_by_round_jumps() {
+        let round_order = vec![1i64, 2, 17, 18, 33, 34];
+        let is_swiss = round_order.len() > 1 && round_order.windows(2).any(|w| w[1] - w[0] > 8);
         assert!(is_swiss);
     }
 
     #[test]
-    fn test_group_matches_rr_style() {
-        let round_order = vec![1, 2, 3, 4, 5, 6, 7];
-        let is_swiss = round_order.len() > 1
-            && round_order.windows(2).any(|w| w[1] - w[0] > 10);
+    fn test_detect_rr_by_consecutive_rounds() {
+        let round_order = vec![1i64, 2, 3, 4, 5, 6, 7];
+        let is_swiss = round_order.len() > 1 && round_order.windows(2).any(|w| w[1] - w[0] > 8);
         assert!(!is_swiss);
+    }
+
+    #[test]
+    fn test_group_matches_by_round_batching() {
+        // Swiss: rounds 1-8 and 9-16 are separate batches (diff 8 > 8? no)
+        // But 1-8, 17-24, 33-40 are separate batches (diff 9 > 8)
+        let round_nums = vec![1i64, 2, 8, 17, 18, 24, 33, 34, 40];
+        let batches: Vec<Vec<i64>> = {
+            let mut groups = vec![];
+            let mut current = vec![];
+            for (i, &r) in round_nums.iter().enumerate() {
+                if i == 0 || r - round_nums[i - 1] > 8 {
+                    if !current.is_empty() {
+                        groups.push(std::mem::take(&mut current));
+                    }
+                }
+                current.push(r);
+            }
+            if !current.is_empty() {
+                groups.push(current);
+            }
+            groups
+        };
+        assert_eq!(batches.len(), 3);
+        assert_eq!(batches[0], vec![1, 2, 8]);
+        assert_eq!(batches[1], vec![17, 18, 24]);
+        assert_eq!(batches[2], vec![33, 34, 40]);
     }
 }

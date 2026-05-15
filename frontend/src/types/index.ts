@@ -106,6 +106,10 @@ export interface MatchDetail {
   stage_id?: string;
   team_a_id: string;
   team_b_id: string;
+  team_a_name?: string;
+  team_b_name?: string;
+  team_a_abbreviation?: string;
+  team_b_abbreviation?: string;
   score_a?: number;
   score_b?: number;
   format: string;

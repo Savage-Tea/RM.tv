@@ -5,6 +5,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 PID_FILE="$PROJECT_DIR/.dev-pids"
 
+# Default env
+export DATABASE_URL="${DATABASE_URL:-postgres://rmtv:rmtv_dev@localhost:5432/rmtv}"
+
 # Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -39,13 +42,15 @@ done
 # ── 2. Database migrations ─────────────────────────────────────
 echo_step "Running database migrations..."
 cd "$PROJECT_DIR/backend"
-sqlx migrate run 2>&1 | sed 's/^/   /'
-echo "   Migrations complete"
+if sqlx migrate run 2>&1 | sed 's/^/   /'; then
+    echo "   Migrations complete"
+else
+    echo_err "Migration failed. Check database connectivity and migrations directory."
+    exit 1
+fi
 
 # ── 3. Seed admin user ─────────────────────────────────────────
 echo_step "Seeding admin user..."
-DB_URL="${DATABASE_URL:-postgres://rmtv:rmtv_dev@localhost:5432/rmtv}"
-
 ADMIN_EXISTS=$(docker compose exec -T db psql -U rmtv -d rmtv -t -c \
     "SELECT count(*) FROM admin_users WHERE username = 'admin';" 2>/dev/null | tr -d ' ')
 

@@ -1,8 +1,8 @@
 use crate::db::Pool;
 use crate::error::AppError;
 use crate::models::{Event, EventDetail, PaginatedResponse};
-use crate::services::{event_service, stage_service};
 use crate::services::stage_service::StageOverview;
+use crate::services::{event_service, stage_service};
 use axum::routing::get;
 use axum::{
     Json, Router,

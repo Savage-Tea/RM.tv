@@ -30,50 +30,138 @@ const EPS: f64 = 0.001;
 fn baseline(rt: &str) -> RatingBaseline {
     match rt {
         "infantry" => RatingBaseline {
-            kda: 1.920, damage: 1043.56, support: 0.01,
-            special: 22.55, econ_exchange: 0.0, econ_mine_diff: 0.0, econ_assemble: 0.001,
+            kda: 1.920,
+            damage: 1043.56,
+            support: 0.01,
+            special: 22.55,
+            econ_exchange: 0.0,
+            econ_mine_diff: 0.0,
+            econ_assemble: 0.001,
         },
         "hero" => RatingBaseline {
-            kda: 0.428, damage: 424.72, support: 0.01,
-            special: 10.70, econ_exchange: 0.0, econ_mine_diff: 0.0, econ_assemble: 0.001,
+            kda: 0.428,
+            damage: 424.72,
+            support: 0.01,
+            special: 10.70,
+            econ_exchange: 0.0,
+            econ_mine_diff: 0.0,
+            econ_assemble: 0.001,
         },
         "engineer" => RatingBaseline {
-            kda: 0.001, damage: 0.01, support: 0.01,
-            special: 1.62, econ_exchange: 0.01, econ_mine_diff: 0.001, econ_assemble: 1.62,
+            kda: 0.001,
+            damage: 0.01,
+            support: 0.01,
+            special: 1.62,
+            econ_exchange: 0.01,
+            econ_mine_diff: 0.001,
+            econ_assemble: 1.62,
         },
         "uav" => RatingBaseline {
-            kda: 2.021, damage: 1455.50, support: 0.01,
-            special: 11.44, econ_exchange: 0.0, econ_mine_diff: 0.0, econ_assemble: 0.001,
+            kda: 2.021,
+            damage: 1455.50,
+            support: 0.01,
+            special: 11.44,
+            econ_exchange: 0.0,
+            econ_mine_diff: 0.0,
+            econ_assemble: 0.001,
         },
         "sentinel" => RatingBaseline {
-            kda: 1.224, damage: 517.63, support: 0.01,
-            special: 0.61, econ_exchange: 0.0, econ_mine_diff: 0.0, econ_assemble: 0.001,
+            kda: 1.224,
+            damage: 517.63,
+            support: 0.01,
+            special: 0.61,
+            econ_exchange: 0.0,
+            econ_mine_diff: 0.0,
+            econ_assemble: 0.001,
         },
         "dart" => RatingBaseline {
-            kda: 0.001, damage: 228.73, support: 0.01,
-            special: 5.00, econ_exchange: 0.0, econ_mine_diff: 0.0, econ_assemble: 0.001,
+            kda: 0.001,
+            damage: 228.73,
+            support: 0.01,
+            special: 5.00,
+            econ_exchange: 0.0,
+            econ_mine_diff: 0.0,
+            econ_assemble: 0.001,
         },
         "radar" => RatingBaseline {
-            kda: 0.001, damage: 0.01, support: 0.01,
-            special: 418.06, econ_exchange: 0.0, econ_mine_diff: 0.0, econ_assemble: 0.001,
+            kda: 0.001,
+            damage: 0.01,
+            support: 0.01,
+            special: 418.06,
+            econ_exchange: 0.0,
+            econ_mine_diff: 0.0,
+            econ_assemble: 0.001,
         },
         _ => RatingBaseline {
-            kda: 1.0, damage: 100.0, support: 1.0,
-            special: 1.0, econ_exchange: 1.0, econ_mine_diff: 1.0, econ_assemble: 1.0,
+            kda: 1.0,
+            damage: 100.0,
+            support: 1.0,
+            special: 1.0,
+            econ_exchange: 1.0,
+            econ_mine_diff: 1.0,
+            econ_assemble: 1.0,
         },
     }
 }
 
 fn weights(rt: &str) -> TypeWeights {
     match rt {
-        "infantry" => TypeWeights { combat: 0.40, damage: 0.35, support: 0.10, econ: 0.00, special: 0.15 },
-        "hero"     => TypeWeights { combat: 0.35, damage: 0.45, support: 0.05, econ: 0.00, special: 0.15 },
-        "engineer" => TypeWeights { combat: 0.00, damage: 0.00, support: 0.15, econ: 0.70, special: 0.15 },
-        "uav"      => TypeWeights { combat: 0.30, damage: 0.30, support: 0.20, econ: 0.00, special: 0.20 },
-        "sentinel" => TypeWeights { combat: 0.25, damage: 0.35, support: 0.10, econ: 0.00, special: 0.30 },
-        "dart"     => TypeWeights { combat: 0.10, damage: 0.25, support: 0.05, econ: 0.00, special: 0.60 },
-        "radar"    => TypeWeights { combat: 0.05, damage: 0.10, support: 0.55, econ: 0.00, special: 0.30 },
-        _          => TypeWeights { combat: 0.25, damage: 0.25, support: 0.25, econ: 0.00, special: 0.25 },
+        "infantry" => TypeWeights {
+            combat: 0.40,
+            damage: 0.35,
+            support: 0.10,
+            econ: 0.00,
+            special: 0.15,
+        },
+        "hero" => TypeWeights {
+            combat: 0.35,
+            damage: 0.45,
+            support: 0.05,
+            econ: 0.00,
+            special: 0.15,
+        },
+        "engineer" => TypeWeights {
+            combat: 0.00,
+            damage: 0.00,
+            support: 0.15,
+            econ: 0.70,
+            special: 0.15,
+        },
+        "uav" => TypeWeights {
+            combat: 0.30,
+            damage: 0.30,
+            support: 0.20,
+            econ: 0.00,
+            special: 0.20,
+        },
+        "sentinel" => TypeWeights {
+            combat: 0.25,
+            damage: 0.35,
+            support: 0.10,
+            econ: 0.00,
+            special: 0.30,
+        },
+        "dart" => TypeWeights {
+            combat: 0.10,
+            damage: 0.25,
+            support: 0.05,
+            econ: 0.00,
+            special: 0.60,
+        },
+        "radar" => TypeWeights {
+            combat: 0.05,
+            damage: 0.10,
+            support: 0.55,
+            econ: 0.00,
+            special: 0.30,
+        },
+        _ => TypeWeights {
+            combat: 0.25,
+            damage: 0.25,
+            support: 0.25,
+            econ: 0.00,
+            special: 0.25,
+        },
     }
 }
 
@@ -107,10 +195,26 @@ pub fn compute_robot_rating(
 
     // If a baseline is near-zero (robot doesn't do this activity), use 1.0
     // so the dimension doesn't drag the rating down.
-    let norm_kda = if bl.kda <= 0.01 { 1.0 } else { kda_raw / bl.kda.max(EPS) };
-    let norm_damage = if bl.damage <= 1.0 { 1.0 } else { damage / bl.damage.max(EPS) };
-    let norm_support = if bl.support <= 0.01 { 1.0 } else { support / bl.support.max(EPS) };
-    let norm_special = if bl.special <= 0.01 { 1.0 } else { special / bl.special.max(EPS) };
+    let norm_kda = if bl.kda <= 0.01 {
+        1.0
+    } else {
+        kda_raw / bl.kda.max(EPS)
+    };
+    let norm_damage = if bl.damage <= 1.0 {
+        1.0
+    } else {
+        damage / bl.damage.max(EPS)
+    };
+    let norm_support = if bl.support <= 0.01 {
+        1.0
+    } else {
+        support / bl.support.max(EPS)
+    };
+    let norm_special = if bl.special <= 0.01 {
+        1.0
+    } else {
+        special / bl.special.max(EPS)
+    };
 
     let mut rating = w.combat * norm_kda
         + w.damage * norm_damage
@@ -135,10 +239,10 @@ pub fn compute_robot_rating(
 /// most fields are zero (pre-season / no-match data).
 pub fn compute_robot_rating_from_kda(
     robot_type: &str,
-    kda_score: f64,   // eaKdaScore from CDN
-    damage: f64,      // eagHurt + gkDamage
-    support: f64,     // eaExchangeEcon
-    special: f64,     // varies by type
+    kda_score: f64, // eaKdaScore from CDN
+    damage: f64,    // eagHurt + gkDamage
+    support: f64,   // eaExchangeEcon
+    special: f64,   // varies by type
     kills: f64,
     deaths: f64,
     assists: f64,
@@ -226,7 +330,13 @@ pub async fn update_robot_ratings(
         &stats
     {
         let map_rating = compute_map_rating(
-            *kills, *deaths, *damage, *hp_healed, *base_damage, *alive_time, &config,
+            *kills,
+            *deaths,
+            *damage,
+            *hp_healed,
+            *base_damage,
+            *alive_time,
+            &config,
         );
 
         let existing: Option<(Uuid, f64, i32)> = sqlx::query_as(
@@ -307,8 +417,7 @@ mod tests {
     #[test]
     fn test_avg_infantry_equals_one() {
         let rating = compute_robot_rating(
-            "infantry",
-            1.92,    // avg kills (non-zero baseline)
+            "infantry", 1.92,    // avg kills (non-zero baseline)
             1.0,     // deaths
             0.5,     // assists
             1043.56, // avg damage
@@ -321,25 +430,23 @@ mod tests {
     #[test]
     fn test_elite_infantry_above_one() {
         let rating = compute_robot_rating(
-            "infantry",
-            5.6,     // IMCA-level kills
-            1.5,
-            2.0,
-            3527.0,  // IMCA-level damage
-            0.0,
-            40.0,    // above-avg hit rate
+            "infantry", 5.6, // IMCA-level kills
+            1.5, 2.0, 3527.0, // IMCA-level damage
+            0.0, 40.0, // above-avg hit rate
         );
-        assert!(rating > 1.5, "Elite infantry should be >1.5, got {}", rating);
+        assert!(
+            rating > 1.5,
+            "Elite infantry should be >1.5, got {}",
+            rating
+        );
     }
 
     #[test]
     fn test_avg_engineer_equals_one() {
         let rating = compute_robot_rating(
-            "engineer",
-            0.0, 0.0, 0.0,
-            0.01,   // damage
-            0.01,   // support (exchange econ)
-            1.62,   // avg assemble count
+            "engineer", 0.0, 0.0, 0.0, 0.01, // damage
+            0.01, // support (exchange econ)
+            1.62, // avg assemble count
         );
         assert!(rating > 0.0, "Engineer rating should be positive");
     }
@@ -347,23 +454,19 @@ mod tests {
     #[test]
     fn test_radar_with_zero_kda() {
         let rating = compute_robot_rating(
-            "radar",
-            0.0, 0.0, 0.0,
-            0.0,
-            0.0,
-            418.06, // average radar marker time
+            "radar", 0.0, 0.0, 0.0, 0.0, 0.0, 418.06, // average radar marker time
         );
-        assert!((rating - 1.0).abs() < 0.3, "Avg radar should be ~1.0, got {}", rating);
+        assert!(
+            (rating - 1.0).abs() < 0.3,
+            "Avg radar should be ~1.0, got {}",
+            rating
+        );
     }
 
     #[test]
     fn test_elite_radar_above_one() {
         let rating = compute_robot_rating(
-            "radar",
-            0.0, 0.0, 0.0,
-            0.0,
-            0.0,
-            800.0,  // ~2x average marker time
+            "radar", 0.0, 0.0, 0.0, 0.0, 0.0, 800.0, // ~2x average marker time
         );
         assert!(rating > 1.2, "Elite radar should be >1.2, got {}", rating);
     }
@@ -371,7 +474,11 @@ mod tests {
     #[test]
     fn test_dart_rating_driven_by_special() {
         let baseline = compute_robot_rating("dart", 0.0, 0.0, 0.0, 228.73, 0.0, 5.0);
-        assert!((baseline - 1.0).abs() < 0.3, "Avg dart ~1.0, got {}", baseline);
+        assert!(
+            (baseline - 1.0).abs() < 0.3,
+            "Avg dart ~1.0, got {}",
+            baseline
+        );
 
         let elite = compute_robot_rating("dart", 0.0, 0.0, 0.0, 400.0, 0.0, 10.0);
         assert!(elite > 1.3, "Elite dart should be >1.3, got {}", elite);
