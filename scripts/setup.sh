@@ -57,6 +57,9 @@ fi
 log "启动 PostgreSQL..."
 docker compose up -d --wait
 
+DATABASE_URL="postgres://rmtv:rmtv_dev@localhost:5432/rmtv"
+export DATABASE_URL
+
 # ── Database Migrations ────────────────────────────────────────────
 log "运行数据库迁移..."
 cd backend
