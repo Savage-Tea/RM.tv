@@ -32,24 +32,6 @@ pub struct EventStage {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct EventStageProgression {
-    pub id: Uuid,
-    pub from_stage_id: Uuid,
-    pub to_stage_id: Uuid,
-    pub slots: i32,
-    pub rule_description: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct EventEntry {
-    pub id: Uuid,
-    pub event_id: Uuid,
-    pub team_id: Uuid,
-    pub seed: Option<i32>,
-    pub created_at: DateTime<Utc>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct EventEntrySummary {
     pub id: Uuid,
     pub event_id: Uuid,

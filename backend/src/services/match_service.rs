@@ -103,7 +103,7 @@ pub async fn list_matches(
              AND ($5::text IS NULL OR e.season = $5)
              AND ($6::text IS NULL OR es.stage_type::text = $6)
              AND ($7::text IS NULL OR ta.name ILIKE $7 OR ta.university ILIKE $7 OR tb.name ILIKE $7 OR tb.university ILIKE $7)
-           ORDER BY {} {} NULLS LAST
+           ORDER BY {} {} NULLS LAST, e.season DESC, m.created_at DESC
            LIMIT $8 OFFSET $9"#,
         sort_col, sort_order
     );

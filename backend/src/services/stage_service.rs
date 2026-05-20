@@ -216,7 +216,6 @@ fn compute_standings_from_matches(
                 team_b_id: m.team_b_id,
                 score_a: m.score_a.unwrap_or(0),
                 score_b: m.score_b.unwrap_or(0),
-                round: m.round.unwrap_or(1),
             })
             .collect();
 

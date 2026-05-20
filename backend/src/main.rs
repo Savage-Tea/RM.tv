@@ -4,7 +4,6 @@ use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitEx
 
 mod auth;
 mod config;
-mod datasource;
 mod db;
 mod error;
 mod models;

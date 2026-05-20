@@ -42,7 +42,6 @@ pub struct CreateStageInput {
 // Column lists with enum-to-text casts for sqlx::FromRow compatibility
 const EVENT_COLS: &str = "id, name, series, season, start_date, end_date, location, status::text AS status, logo_url, created_at, updated_at";
 const STAGE_COLS: &str = "id, event_id, name, stage_format::text AS stage_format, stage_type::text AS stage_type, order_index, start_date, end_date, created_at";
-const ENTRY_COLS: &str = "id, event_id, team_id, seed, created_at";
 
 pub async fn list_events(
     pool: &PgPool,

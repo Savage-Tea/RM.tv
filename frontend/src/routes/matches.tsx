@@ -234,7 +234,15 @@ export function MatchesPage() {
 
       {/* Pagination */}
       {matches.data && matches.data.total > matches.data.per_page && (
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-center gap-2 items-center">
+          <button
+            onClick={() => setParam("page", "1")}
+            disabled={page === 1}
+            className="px-2 py-1 text-sm border rounded disabled:opacity-50"
+            title="首页"
+          >
+            «
+          </button>
           <button
             onClick={() => setParam("page", String(Math.max(1, page - 1)))}
             disabled={page === 1}
@@ -242,15 +250,44 @@ export function MatchesPage() {
           >
             上一页
           </button>
-          <span className="text-sm py-1 text-muted-foreground">
-            {page} / {Math.ceil(matches.data.total / matches.data.per_page)}
-          </span>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const form = e.target as HTMLFormElement;
+              const input = form.elements.namedItem("page") as HTMLInputElement;
+              const n = parseInt(input.value, 10);
+              const maxPage = Math.ceil(matches.data!.total / matches.data!.per_page);
+              if (n >= 1 && n <= maxPage) setParam("page", String(n));
+            }}
+            className="flex items-center gap-1"
+          >
+            <input
+              name="page"
+              type="number"
+              min={1}
+              max={Math.ceil(matches.data.total / matches.data.per_page)}
+              defaultValue={page}
+              key={page}
+              className="w-16 text-center text-sm border rounded py-0.5 bg-background"
+            />
+            <span className="text-sm text-muted-foreground">
+              / {Math.ceil(matches.data.total / matches.data.per_page)}
+            </span>
+          </form>
           <button
             onClick={() => setParam("page", String(page + 1))}
             disabled={page >= Math.ceil(matches.data.total / matches.data.per_page)}
             className="px-3 py-1 text-sm border rounded disabled:opacity-50"
           >
             下一页
+          </button>
+          <button
+            onClick={() => setParam("page", String(Math.ceil(matches.data.total / matches.data.per_page)))}
+            disabled={page >= Math.ceil(matches.data.total / matches.data.per_page)}
+            className="px-2 py-1 text-sm border rounded disabled:opacity-50"
+            title="末页"
+          >
+            »
           </button>
         </div>
       )}

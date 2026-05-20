@@ -2,6 +2,7 @@ import { useParams, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { TeamLogo } from "@/components/shared/TeamLogo";
+import { ScoreDisplay } from "@/components/shared/ScoreDisplay";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -90,55 +91,66 @@ export function TeamDetailPage() {
           <div className="space-y-2">
             {t.recent_matches.map((m) => {
               const side = m.team_a_id === t.id ? "a" : "b";
-              const opponent = side === "a" ? m.team_b_name : m.team_a_name;
+              const oppName = side === "a" ? m.team_b_name : m.team_a_name;
+              const oppUni = side === "a" ? m.team_b_university : m.team_a_university;
+              const oppLogo = side === "a" ? m.team_b_logo_url : m.team_a_logo_url;
               const isScheduled = m.status === "scheduled";
-              const isWinner = m.score_a != null && m.score_b != null
+              const finished = m.score_a != null && m.score_b != null;
+              const isWinner = finished
                 ? (side === "a" && m.score_a > m.score_b) || (side === "b" && m.score_b > m.score_a)
                 : false;
-              const isDraw = m.score_a != null && m.score_b != null && m.score_a === m.score_b;
+              const isDraw = finished && m.score_a === m.score_b;
 
               return (
                 <Link
                   key={m.id}
                   to="/matches/$matchId"
                   params={{ matchId: m.id }}
-                  className="flex items-center gap-4 rounded-lg border p-3 hover:border-primary/30 transition-colors"
+                  className="flex items-center gap-4 rounded-lg border p-3 hover:border-primary/50 transition-colors"
                 >
-                  <div className="flex-1 text-right min-w-0">
-                    <div className={`font-medium truncate ${isWinner ? "text-primary" : ""}`}>
-                      {t.name}
+                  {/* Self */}
+                  <div className="flex-1 text-right min-w-0 flex items-center justify-end gap-2.5">
+                    <div>
+                      <div className={`font-medium truncate text-sm ${isWinner ? "text-primary" : ""}`}>
+                        {t.name}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">{t.university}</div>
                     </div>
+                    <TeamLogo name={t.name} logoUrl={t.logo_url} abbreviation={t.abbreviation} size="sm" />
                   </div>
-                  <div className="flex flex-col items-center min-w-32">
+                  {/* Score / Time */}
+                  <div className="flex flex-col items-center min-w-20">
                     {isScheduled ? (
                       m.scheduled_at ? (
-                        <div className="text-base font-semibold leading-none">
+                        <div className="text-sm font-semibold leading-none">
                           {new Date(m.scheduled_at).toLocaleTimeString("zh-CN", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: false,
+                            hour: "2-digit", minute: "2-digit", hour12: false,
                           })}
                         </div>
                       ) : (
-                        <div className="text-sm text-muted-foreground">待确认</div>
+                        <div className="text-xs text-muted-foreground">待确认</div>
                       )
                     ) : (
-                      <div className={`text-base font-bold font-mono tabular-nums ${
-                        isWinner ? "text-primary" : isDraw ? "text-muted-foreground" : ""
-                      }`}>
-                        {side === "a" ? `${m.score_a ?? "—"}:${m.score_b ?? "—"}` : `${m.score_b ?? "—"}:${m.score_a ?? "—"}`}
-                      </div>
+                      <ScoreDisplay scoreA={m.score_a} scoreB={m.score_b} winner={isWinner ? side : isDraw ? null : (finished ? (side === "a" ? "b" : "a") : null)} />
                     )}
                     <StatusBadge status={m.status} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className={`font-medium truncate ${!isScheduled && !isWinner && m.score_a !== m.score_b ? "text-primary" : ""}`}>
-                      {opponent}
+                  {/* Opponent */}
+                  <div className="flex-1 min-w-0 flex items-center gap-2.5">
+                    <TeamLogo name={oppName} logoUrl={oppLogo} abbreviation={oppName.slice(0, 2)} size="sm" />
+                    <div>
+                      <div className={`font-medium truncate text-sm ${!isScheduled && !isWinner && !isDraw ? "text-primary" : ""}`}>
+                        {oppName}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">{oppUni}</div>
                     </div>
                   </div>
-                  <div className="text-xs text-muted-foreground text-right min-w-20">
-                    {m.event_name}
+                  {/* Event info */}
+                  <div className="text-xs text-muted-foreground text-right min-w-24 shrink-0">
+                    <div className="truncate max-w-32">{m.event_name}</div>
+                    {m.stage_name && <div className="text-muted-foreground/70">{m.stage_name}</div>}
                     {m.group_name && ` · ${m.group_name}`}
+                    <div className="text-muted-foreground/50">{m.format?.toUpperCase()}</div>
                   </div>
                 </Link>
               );

@@ -3,6 +3,7 @@ pub struct Config {
     pub database_url: String,
     pub api_host: String,
     pub api_port: u16,
+    #[allow(dead_code)]
     pub cors_origin: String,
     pub jwt_secret: String,
 }
