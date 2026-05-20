@@ -1,8 +1,5 @@
-pub mod elimination;
-pub mod elo_service;
 pub mod event_service;
 pub mod match_service;
-pub mod progression;
 pub mod ranking_service;
 pub mod rating_service;
 pub mod round_robin;

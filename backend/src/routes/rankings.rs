@@ -21,7 +21,7 @@ async fn list_rankings(
     State(pool): State<Pool>,
     Query(params): Query<ListRankingsQuery>,
 ) -> Result<Json<PaginatedResponse<RankingEntry>>, AppError> {
-    let season = params.season.unwrap_or_else(|| "2026".into());
+    let season = params.season.unwrap_or_else(|| "blended".into());
     let result = ranking_service::list_rankings(
         &pool,
         &season,
@@ -42,7 +42,7 @@ async fn get_ranking_history(
     Path(team_id): Path<Uuid>,
     Query(params): Query<RankingHistoryQuery>,
 ) -> Result<Json<Vec<TeamEloHistory>>, AppError> {
-    let season = params.season.unwrap_or_else(|| "2026".into());
+    let season = params.season.unwrap_or_else(|| "blended".into());
     let result = ranking_service::get_ranking_history(&pool, team_id, &season).await?;
     Ok(Json(result))
 }

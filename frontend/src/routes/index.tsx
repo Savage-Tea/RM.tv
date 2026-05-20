@@ -3,6 +3,8 @@ import { api } from "@/lib/api";
 import { Link } from "@tanstack/react-router";
 import { Calendar, Trophy, Activity, ArrowRight, Flame } from "lucide-react";
 import { StatusBadge } from "@/components/shared/StatusBadge";
+import { ScoreDisplay } from "@/components/shared/ScoreDisplay";
+import { TeamLogo } from "@/components/shared/TeamLogo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -47,13 +49,30 @@ export function HomePage() {
                       key={m.id}
                       to="/matches/$matchId"
                       params={{ matchId: m.id }}
-                      className="flex items-center justify-between rounded-lg border p-3 hover:border-primary/50 transition-colors"
+                      className="flex items-center gap-3 rounded-lg border p-3 hover:border-primary/50 transition-colors"
                     >
-                      <div className="flex-1 text-right font-medium">{m.team_a_name}</div>
-                      <div className="px-4">
+                      <div className="flex-1 text-right min-w-0 flex items-center justify-end gap-2">
+                        <div>
+                          <div className="font-medium text-sm truncate">{m.team_a_name}</div>
+                          <div className="text-xs text-muted-foreground truncate">{m.team_a_university}</div>
+                        </div>
+                        <TeamLogo name={m.team_a_name} logoUrl={m.team_a_logo_url} abbreviation={m.team_a_name.slice(0, 2)} size="sm" />
+                      </div>
+                      <div className="flex flex-col items-center min-w-16">
+                        <ScoreDisplay scoreA={m.score_a} scoreB={m.score_b} />
                         <StatusBadge status={m.status} />
                       </div>
-                      <div className="flex-1 font-medium">{m.team_b_name}</div>
+                      <div className="flex-1 min-w-0 flex items-center gap-2">
+                        <TeamLogo name={m.team_b_name} logoUrl={m.team_b_logo_url} abbreviation={m.team_b_name.slice(0, 2)} size="sm" />
+                        <div>
+                          <div className="font-medium text-sm truncate">{m.team_b_name}</div>
+                          <div className="text-xs text-muted-foreground truncate">{m.team_b_university}</div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground shrink-0">
+                        {m.stage_name && <div>{m.stage_name}</div>}
+                        {m.group_name && <span>· {m.group_name}</span>}
+                      </div>
                     </Link>
                   ))}
                 </div>

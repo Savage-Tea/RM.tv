@@ -2,19 +2,20 @@ use crate::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-/// Prior weight for Bayesian shrinkage toward average (1.0).
-/// Equivalent to 5 "fake matches" at rating 1.0.
-const PRIOR_WEIGHT: f64 = 5.0;
-
-/// Apply Bayesian shrinkage toward the population mean (1.0).
-/// Reduces rating inflation from small sample sizes.
+/// Per-match rating is computed from CDN per-match averages — no additional
+/// shrinkage needed.  For teams with zero matches we return the prior (1.0).
 pub fn display_rating(raw_rating: f64, matches_played: i32) -> f64 {
-    (1.0 * PRIOR_WEIGHT + raw_rating * matches_played as f64) / (PRIOR_WEIGHT + matches_played as f64)
+    if matches_played == 0 {
+        1.0
+    } else {
+        raw_rating
+    }
 }
 
 // ── Per-type baseline averages (computed from 96-team CDN data, 2026 season) ──
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct RatingBaseline {
     pub kda: f64,
     pub damage: f64,
@@ -27,6 +28,7 @@ pub struct RatingBaseline {
 
 /// Per-type dimension weights. All balanced so average robot = 1.0.
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct TypeWeights {
     pub combat: f64,
     pub damage: f64,
@@ -35,8 +37,10 @@ pub struct TypeWeights {
     pub special: f64,
 }
 
+#[allow(dead_code)]
 const EPS: f64 = 0.001;
 
+#[allow(dead_code)]
 fn baseline(rt: &str) -> RatingBaseline {
     match rt {
         "infantry" => RatingBaseline {
@@ -88,7 +92,7 @@ fn baseline(rt: &str) -> RatingBaseline {
             kda: 0.001,
             damage: 228.73,
             support: 0.01,
-            special: 5.00,
+            special: 3.62, // weighted: 0.22*1 + 2.8*1 + 0.15*2 + 0.07*3.5 + 0.01*5
             econ_exchange: 0.0,
             econ_mine_diff: 0.0,
             econ_assemble: 0.001,
@@ -114,6 +118,7 @@ fn baseline(rt: &str) -> RatingBaseline {
     }
 }
 
+#[allow(dead_code)]
 fn weights(rt: &str) -> TypeWeights {
     match rt {
         "infantry" => TypeWeights {
@@ -124,8 +129,10 @@ fn weights(rt: &str) -> TypeWeights {
             special: 0.15,
         },
         "hero" => TypeWeights {
-            combat: 0.35,
-            damage: 0.45,
+            // Damage-heavy: many heroes fight at range (snipers, artillery).
+            // Damage dominates over KDA so ranged playstyles aren't penalized.
+            combat: 0.25,
+            damage: 0.55,
             support: 0.05,
             econ: 0.00,
             special: 0.15,
@@ -181,6 +188,7 @@ fn weights(rt: &str) -> TypeWeights {
 /// average for that robot type), then combined with per-type dimension weights.
 ///
 /// Returns a value centered at 1.0 (average = 1.0). Typical range: 0.3 – 1.7.
+#[allow(dead_code)]
 pub fn compute_robot_rating(
     robot_type: &str,
     kills: f64,
@@ -247,7 +255,7 @@ pub fn compute_robot_rating(
 
 /// Convenience: compute rating from per-field values, falling back to KDA-only if
 /// most fields are zero (pre-season / no-match data).
-#[allow(clippy::too_many_arguments)]
+#[allow(dead_code, clippy::too_many_arguments)]
 pub fn compute_robot_rating_from_kda(
     robot_type: &str,
     kda_score: f64, // eaKdaScore from CDN
@@ -261,10 +269,13 @@ pub fn compute_robot_rating_from_kda(
     let bl = baseline(robot_type);
 
     // If the robot has no real match data, use KDA score (pre-processed by CDN) as a fallback.
-    // This preserves relative ordering when raw stats are sparse.
     let has_meaningful_data = damage > 0.1 || kills > 0.01;
     if !has_meaningful_data {
-        // Use CDN's eaKdaScore directly, scaled relative to baseline
+        // For types with near-zero KDA baseline (radar, engineer, dart),
+        // KDA is not their primary metric. Return 1.0 = average.
+        if bl.kda <= 0.01 {
+            return 1.0;
+        }
         let norm_kda = kda_score / bl.kda.max(EPS);
         return norm_kda.clamp(0.1, 5.0);
     }
@@ -272,10 +283,108 @@ pub fn compute_robot_rating_from_kda(
     compute_robot_rating(robot_type, kills, deaths, assists, damage, support, special)
 }
 
+// ── Engineer / Radar: pure support robots ──────────────────────────
+
+/// Engineer rating: assembly is the core skill. No combat.
+/// Dimensions: assembly economy (55%), success count (30%), difficulty (15%).
+#[allow(dead_code)]
+pub fn compute_engineer_rating(
+    assemble_econ: f64,    // eaAssembleEcon — economic value from assembly
+    assemble_succ: f64,    // eaAssembleSuccCnt — successful assemblies per match
+    assemble_diff: f64,    // avgAssembleDiff — difficulty of assembly targets
+) -> f64 {
+    // CDN baselines (32 teams with actual data, 2026 season)
+    const BL_ECON: f64 = 1377.49;
+    const BL_SUCC: f64 = 1.65;
+    const BL_DIFF: f64 = 1.56;
+
+    let has_data = assemble_econ > 1.0 || assemble_succ > 0.01;
+    if !has_data {
+        return 1.0;
+    }
+
+    let n_econ = assemble_econ / BL_ECON.max(EPS);
+    let n_succ = assemble_succ / BL_SUCC.max(EPS);
+    let n_diff = assemble_diff / BL_DIFF.max(EPS);
+
+    0.55 * n_econ + 0.30 * n_succ + 0.15 * n_diff
+}
+
+/// Radar rating: marking and intelligence gathering. No combat.
+/// Dimensions: marker time (50%), counter time (30%), parse success (20%).
+#[allow(dead_code)]
+pub fn compute_radar_rating(
+    marker_time: f64,      // eaRadarMarkerTime — seconds of target marking
+    counter_time: f64,     // eaRadarCounterTime — seconds of counter-detection
+    parse_succ: f64,       // eaRadarParseSuccCnt — successful parses per match
+) -> f64 {
+    // CDN baselines (27/14/8 teams respectively, 2026 season)
+    const BL_MARKER: f64 = 417.61;
+    const BL_COUNTER: f64 = 38.55;
+    const BL_PARSE: f64 = 1.04;
+
+    let has_data = marker_time > 1.0 || counter_time > 0.1 || parse_succ > 0.01;
+    if !has_data {
+        return 1.0;
+    }
+
+    let n_marker = if marker_time > 0.1 { marker_time / BL_MARKER.max(EPS) } else { 1.0 };
+    let n_counter = if counter_time > 0.1 { counter_time / BL_COUNTER.max(EPS) } else { 1.0 };
+    let n_parse = if parse_succ > 0.01 { parse_succ / BL_PARSE.max(EPS) } else { 1.0 };
+
+    0.50 * n_marker + 0.30 * n_counter + 0.20 * n_parse
+}
+
+// ── Dart target weighting ───────────────────────────────────────────
+
+/// Difficulty multipliers for different dart target types.
+/// Higher weight = more rating reward for the same number of hits.
+#[allow(dead_code)]
+const DART_OUTPOST_WEIGHT: f64 = 1.0;   // 前哨站
+#[allow(dead_code)]
+const DART_FIXED_WEIGHT: f64 = 1.0;     // 固定靶
+#[allow(dead_code)]
+const DART_RD_FIX_WEIGHT: f64 = 2.0;     // 基地固定靶
+#[allow(dead_code)]
+const DART_RD_MOVE_WEIGHT: f64 = 3.5;    // 基地移动靶（技术难度大）
+#[allow(dead_code)]
+const DART_END_MOVE_WEIGHT: f64 = 5.0;   // 末端移动靶（技术难度极大）
+
+/// Compute a weighted dart special score from individual CDN target counters.
+///
+/// The hardest targets (基地移动靶, 末端移动靶) get heavy multipliers because
+/// hitting a moving target at long range requires exceptional skill.
+#[allow(dead_code)]
+pub fn compute_dart_special(
+    outpost_cnt: f64,   // etDartOutpostCnt
+    fixed_cnt: f64,     // etDartFixedCnt
+    rd_fix_cnt: f64,    // etDartRDFixCnt
+    rd_move_cnt: f64,   // etDartRDMoveCnt
+    end_move_cnt: f64,  // etDartEndMoveCnt
+) -> f64 {
+    outpost_cnt * DART_OUTPOST_WEIGHT
+        + fixed_cnt * DART_FIXED_WEIGHT
+        + rd_fix_cnt * DART_RD_FIX_WEIGHT
+        + rd_move_cnt * DART_RD_MOVE_WEIGHT
+        + end_move_cnt * DART_END_MOVE_WEIGHT
+}
+
+/// Update the dart baseline to reflect the weighted score.
+/// Original baseline.special = 5.0 was for unweighted total hits.
+/// With weighting applied, we recompute the baseline from CDN data.
+#[allow(dead_code)]
+pub fn dart_baseline_special() -> f64 {
+    // CDN averages across all dart robots (96 teams, 2026):
+    //   etDartOutpostCnt ~0.22, etDartFixedCnt ~2.8, etDartRDFixCnt ~0.15,
+    //   etDartRDMoveCnt ~0.07, etDartEndMoveCnt ~0.01
+    compute_dart_special(0.22, 2.8, 0.15, 0.07, 0.01)
+}
+
 // ── Legacy compatibility layer ──────────────────────────────────────
 
 /// Compute single-map robot rating from per-map stats and config weights.
 /// Legacy formula, retained for per-match stat updates.
+#[allow(dead_code)]
 pub fn compute_map_rating(
     kills: i32,
     deaths: i32,
@@ -294,6 +403,7 @@ pub fn compute_map_rating(
 }
 
 /// Get rating config for a season, or insert default.
+#[allow(dead_code)]
 pub async fn get_or_create_config(pool: &PgPool, season: &str) -> Result<RatingWeights, AppError> {
     let config: Option<RatingWeights> = sqlx::query_as(
         "SELECT kills_weight, deaths_weight, damage_weight, heal_weight, base_damage_weight, survival_weight FROM rating_config WHERE season = $1"
@@ -317,6 +427,7 @@ pub async fn get_or_create_config(pool: &PgPool, season: &str) -> Result<RatingW
 }
 
 /// Update robot ratings after a match finishes.
+#[allow(dead_code)]
 pub async fn update_robot_ratings(
     pool: &PgPool,
     match_id: Uuid,
@@ -393,6 +504,7 @@ pub async fn update_robot_ratings(
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
+#[allow(dead_code)]
 pub struct RatingWeights {
     #[sqlx(rename = "kills_weight")]
     pub kills: f64,
@@ -426,33 +538,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_shrinkage_small_sample() {
-        // 1 match at 3.0 → pulled toward 1.0
-        let r = display_rating(3.0, 1);
-        assert!(r > 1.2 && r < 1.5, "1-match 3.0 → ~1.33, got {}", r);
-    }
-
-    #[test]
-    fn test_shrinkage_large_sample() {
-        // 50 matches at 2.0 → barely adjusted
-        let r = display_rating(2.0, 50);
-        assert!(r > 1.85 && r < 2.0, "50-match 2.0 → ~1.91, got {}", r);
-    }
-
-    #[test]
-    fn test_shrinkage_no_matches() {
-        // 0 matches → exactly 1.0 (the prior)
-        let r = display_rating(0.0, 0);
+    fn test_display_rating_no_matches() {
+        let r = display_rating(3.0, 0);
         assert!((r - 1.0).abs() < 0.01, "0-match → 1.0, got {}", r);
     }
 
     #[test]
-    fn test_shrinkage_average_player() {
-        // Average player at 1.0 → stays at 1.0 regardless of matches
-        let r = display_rating(1.0, 1);
-        assert!((r - 1.0).abs() < 0.01, "Avg player should stay 1.0, got {}", r);
-        let r = display_rating(1.0, 20);
-        assert!((r - 1.0).abs() < 0.01, "Avg player should stay 1.0, got {}", r);
+    fn test_display_rating_with_matches() {
+        // Per-match rating passes through unchanged
+        let r = display_rating(2.5, 5);
+        assert!((r - 2.5).abs() < 0.01, "5-match 2.5 → 2.5, got {}", r);
+    }
+
+    #[test]
+    fn test_display_rating_single_match() {
+        // Single match — still passes through as-is (it's already per-match)
+        let r = display_rating(5.0, 1);
+        assert!((r - 5.0).abs() < 0.01, "1-match 5.0 → 5.0, got {}", r);
     }
 
     #[test]
@@ -514,14 +616,37 @@ mod tests {
 
     #[test]
     fn test_dart_rating_driven_by_special() {
-        let baseline = compute_robot_rating("dart", 0.0, 0.0, 0.0, 228.73, 0.0, 5.0);
+        let baseline = compute_robot_rating("dart", 0.0, 0.0, 0.0, 228.73, 0.0, 3.62);
         assert!(
             (baseline - 1.0).abs() < 0.3,
             "Avg dart ~1.0, got {}",
             baseline
         );
 
-        let elite = compute_robot_rating("dart", 0.0, 0.0, 0.0, 400.0, 0.0, 10.0);
+        let elite = compute_robot_rating("dart", 0.0, 0.0, 0.0, 400.0, 0.0, 8.0);
         assert!(elite > 1.3, "Elite dart should be >1.3, got {}", elite);
+    }
+
+    #[test]
+    fn test_dart_special_weighting() {
+        let s = compute_dart_special(0.0, 0.0, 0.0, 1.0, 0.0);
+        assert!((s - 3.5).abs() < 0.01, "1 RD-move hit → 3.5, got {}", s);
+
+        let s = compute_dart_special(0.0, 0.0, 0.0, 0.0, 1.0);
+        assert!((s - 5.0).abs() < 0.01, "1 end-move hit → 5.0, got {}", s);
+
+        // Regular targets should be much lower value
+        let s = compute_dart_special(0.0, 3.0, 0.0, 0.0, 0.0);
+        assert!((s - 3.0).abs() < 0.01, "3 fixed hits → 3.0, got {}", s);
+
+        // Elite dart: some of everything including hard targets
+        let elite = compute_dart_special(1.0, 10.0, 2.0, 3.0, 1.0);
+        assert!(elite > 25.0, "Elite dart with hard targets should be >25, got {}", elite);
+    }
+
+    #[test]
+    fn test_dart_baseline_special() {
+        let bl = dart_baseline_special();
+        assert!(bl > 3.0 && bl < 5.0, "Weighted dart baseline should be 3-5, got {}", bl);
     }
 }

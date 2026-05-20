@@ -9,7 +9,9 @@ use serde_json::json;
 
 #[derive(Debug, Clone)]
 pub struct AuthUser {
+    #[allow(dead_code)]
     pub user_id: uuid::Uuid,
+    #[allow(dead_code)]
     pub username: String,
 }
 
