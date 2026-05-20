@@ -128,3 +128,12 @@
     @apply font-sans;
     }
 }
+
+@keyframes bracket-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px 2px rgba(234, 179, 8, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px 4px rgba(234, 179, 8, 0.8);
+  }
+}

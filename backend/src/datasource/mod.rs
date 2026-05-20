@@ -82,6 +82,7 @@ pub struct TeamInput {
     pub name_en: Option<String>,
     pub university: String,
     pub abbreviation: Option<String>,
+    pub logo_url: Option<String>,
     pub founded_year: Option<i32>,
     pub description: Option<String>,
     pub members: Vec<MemberInput>,

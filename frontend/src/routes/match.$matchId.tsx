@@ -1,9 +1,10 @@
-import { useParams } from "@tanstack/react-router";
+import { useParams, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ScoreDisplay } from "@/components/shared/ScoreDisplay";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { TeamLogo } from "@/components/shared/TeamLogo";
 import { DataTable } from "@/components/shared/DataTable";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -65,18 +66,28 @@ export function MatchDetailPage() {
 
       <div className="flex justify-center py-8">
         <div className="flex items-center gap-8">
-          <div className="text-right">
-            <div className="text-xl font-bold">{m.team_a_name || m.team_a_id}</div>
-            {m.team_a_abbreviation && (
-              <div className="text-sm text-muted-foreground">{m.team_a_abbreviation}</div>
-            )}
+          <div className="text-right flex flex-col items-end gap-2">
+            <Link to="/teams/$teamId" params={{ teamId: m.team_a_id }} className="flex items-center gap-3 hover:opacity-80">
+              <div>
+                <div className="text-xl font-bold">{m.team_a_name || m.team_a_id}</div>
+                {m.team_a_university && (
+                  <div className="text-sm text-muted-foreground">{m.team_a_university}</div>
+                )}
+              </div>
+              <TeamLogo name={m.team_a_name || m.team_a_id} logoUrl={m.team_a_logo_url} abbreviation={m.team_a_abbreviation} size="md" />
+            </Link>
           </div>
           <ScoreDisplay scoreA={m.score_a} scoreB={m.score_b} winner={winner} size="lg" />
-          <div>
-            <div className="text-xl font-bold">{m.team_b_name || m.team_b_id}</div>
-            {m.team_b_abbreviation && (
-              <div className="text-sm text-muted-foreground">{m.team_b_abbreviation}</div>
-            )}
+          <div className="flex flex-col items-start gap-2">
+            <Link to="/teams/$teamId" params={{ teamId: m.team_b_id }} className="flex items-center gap-3 hover:opacity-80">
+              <TeamLogo name={m.team_b_name || m.team_b_id} logoUrl={m.team_b_logo_url} abbreviation={m.team_b_abbreviation} size="md" />
+              <div>
+                <div className="text-xl font-bold">{m.team_b_name || m.team_b_id}</div>
+                {m.team_b_university && (
+                  <div className="text-sm text-muted-foreground">{m.team_b_university}</div>
+                )}
+              </div>
+            </Link>
           </div>
         </div>
       </div>
@@ -125,14 +136,6 @@ export function MatchDetailPage() {
           <Table>
             <TableBody>
               <TableRow>
-                <TableCell className="font-medium w-32">赛事</TableCell>
-                <TableCell>{m.event_id}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">阶段</TableCell>
-                <TableCell>{m.stage_id ?? "—"}</TableCell>
-              </TableRow>
-              <TableRow>
                 <TableCell className="font-medium">赛制</TableCell>
                 <TableCell>{m.format?.toUpperCase()}</TableCell>
               </TableRow>
@@ -141,11 +144,8 @@ export function MatchDetailPage() {
                   <TableCell className="font-medium w-32">预定时间</TableCell>
                   <TableCell>
                     {new Date(m.scheduled_at).toLocaleString("zh-CN", {
-                      year: "numeric",
-                      month: "2-digit",
-                      day: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
+                      year: "numeric", month: "2-digit", day: "2-digit",
+                      hour: "2-digit", minute: "2-digit", hour12: false,
                     })}
                   </TableCell>
                 </TableRow>
@@ -155,11 +155,8 @@ export function MatchDetailPage() {
                   <TableCell className="font-medium w-32">开始时间</TableCell>
                   <TableCell>
                     {new Date(m.started_at).toLocaleString("zh-CN", {
-                      year: "numeric",
-                      month: "2-digit",
-                      day: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
+                      year: "numeric", month: "2-digit", day: "2-digit",
+                      hour: "2-digit", minute: "2-digit", hour12: false,
                     })}
                   </TableCell>
                 </TableRow>
@@ -169,11 +166,8 @@ export function MatchDetailPage() {
                   <TableCell className="font-medium w-32">结束时间</TableCell>
                   <TableCell>
                     {new Date(m.finished_at).toLocaleString("zh-CN", {
-                      year: "numeric",
-                      month: "2-digit",
-                      day: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
+                      year: "numeric", month: "2-digit", day: "2-digit",
+                      hour: "2-digit", minute: "2-digit", hour12: false,
                     })}
                   </TableCell>
                 </TableRow>

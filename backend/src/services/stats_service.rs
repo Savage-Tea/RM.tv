@@ -1,5 +1,6 @@
 use crate::error::AppError;
 use crate::models::{PaginatedResponse, RobotRating};
+use crate::services::rating_service::display_rating;
 use sqlx::PgPool;
 
 pub async fn list_robot_ratings(
@@ -63,5 +64,9 @@ pub async fn list_robot_ratings(
         }
     };
 
-    Ok(PaginatedResponse::new(ratings, total, page, per_page))
+    let mut result = PaginatedResponse::new(ratings, total, page, per_page);
+    for r in &mut result.data {
+        r.rating = display_rating(r.rating, r.matches_played);
+    }
+    Ok(result)
 }

@@ -7,6 +7,16 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Team } from "@/types";
 
+function groupByUniversity(teams: Team[]): { university: string; teams: Team[] }[] {
+  const map = new Map<string, Team[]>();
+  for (const t of teams) {
+    const list = map.get(t.university) || [];
+    list.push(t);
+    map.set(t.university, list);
+  }
+  return Array.from(map.entries()).map(([university, teams]) => ({ university, teams }));
+}
+
 export function TeamsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -25,11 +35,11 @@ export function TeamsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="战队" description="参赛战队信息" />
+      <PageHeader title="参赛学校" description="按学校查看参赛战队" />
 
       <input
         type="text"
-        placeholder="搜索战队..."
+        placeholder="搜索学校或战队..."
         value={search}
         onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         className="w-full max-w-sm rounded-md border px-3 py-2 text-sm"
@@ -43,28 +53,44 @@ export function TeamsPage() {
         </div>
       ) : teams.data?.data.length ? (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {teams.data.data.map((team: Team) => (
-              <Link
-                key={team.id}
-                to="/teams/$teamId"
-                params={{ teamId: team.id }}
-                className="flex items-center gap-4 rounded-lg border p-4 hover:border-primary/50 transition-colors"
-              >
-                <TeamLogo
-                  name={team.name}
-                  abbreviation={team.abbreviation}
-                  logoUrl={team.logo_url}
-                  size="md"
-                />
-                <div>
-                  <div className="font-semibold">{team.name}</div>
-                  {team.name_en && (
-                    <div className="text-xs text-muted-foreground">{team.name_en}</div>
+          <div className="space-y-6">
+            {groupByUniversity(teams.data.data).map(({ university, teams: uniTeams }) => (
+              <div key={university}>
+                <h3 className="text-md font-semibold mb-3 pb-1.5 border-b">
+                  {university}
+                  {uniTeams.length > 1 && (
+                    <span className="ml-2 text-sm font-normal text-muted-foreground">
+                      {uniTeams.length} 支战队
+                    </span>
                   )}
-                  <div className="text-sm text-muted-foreground">{team.university}</div>
+                </h3>
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {uniTeams.map((team: Team) => (
+                    <Link
+                      key={team.id}
+                      to="/teams/$teamId"
+                      params={{ teamId: team.id }}
+                      className="flex items-center gap-3 rounded-lg border p-3 hover:border-primary/50 transition-colors"
+                    >
+                      <TeamLogo
+                        name={team.name}
+                        abbreviation={team.abbreviation}
+                        logoUrl={team.logo_url}
+                        size="sm"
+                      />
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm truncate">{team.name}</div>
+                        {team.name_en && (
+                          <div className="text-xs text-muted-foreground truncate">{team.name_en}</div>
+                        )}
+                        {team.abbreviation && (
+                          <div className="text-xs text-muted-foreground">{team.abbreviation}</div>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
 

@@ -2,6 +2,16 @@ use crate::error::AppError;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+/// Prior weight for Bayesian shrinkage toward average (1.0).
+/// Equivalent to 5 "fake matches" at rating 1.0.
+const PRIOR_WEIGHT: f64 = 5.0;
+
+/// Apply Bayesian shrinkage toward the population mean (1.0).
+/// Reduces rating inflation from small sample sizes.
+pub fn display_rating(raw_rating: f64, matches_played: i32) -> f64 {
+    (1.0 * PRIOR_WEIGHT + raw_rating * matches_played as f64) / (PRIOR_WEIGHT + matches_played as f64)
+}
+
 // ── Per-type baseline averages (computed from 96-team CDN data, 2026 season) ──
 
 #[derive(Debug, Clone)]
@@ -414,6 +424,36 @@ impl Default for RatingWeights {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_shrinkage_small_sample() {
+        // 1 match at 3.0 → pulled toward 1.0
+        let r = display_rating(3.0, 1);
+        assert!(r > 1.2 && r < 1.5, "1-match 3.0 → ~1.33, got {}", r);
+    }
+
+    #[test]
+    fn test_shrinkage_large_sample() {
+        // 50 matches at 2.0 → barely adjusted
+        let r = display_rating(2.0, 50);
+        assert!(r > 1.85 && r < 2.0, "50-match 2.0 → ~1.91, got {}", r);
+    }
+
+    #[test]
+    fn test_shrinkage_no_matches() {
+        // 0 matches → exactly 1.0 (the prior)
+        let r = display_rating(0.0, 0);
+        assert!((r - 1.0).abs() < 0.01, "0-match → 1.0, got {}", r);
+    }
+
+    #[test]
+    fn test_shrinkage_average_player() {
+        // Average player at 1.0 → stays at 1.0 regardless of matches
+        let r = display_rating(1.0, 1);
+        assert!((r - 1.0).abs() < 0.01, "Avg player should stay 1.0, got {}", r);
+        let r = display_rating(1.0, 20);
+        assert!((r - 1.0).abs() < 0.01, "Avg player should stay 1.0, got {}", r);
+    }
 
     #[test]
     fn test_avg_infantry_equals_one() {

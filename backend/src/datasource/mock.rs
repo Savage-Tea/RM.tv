@@ -110,6 +110,7 @@ impl DataSource for MockDataSource {
                 name_en: Some("TJU".into()),
                 university: "天津大学".into(),
                 abbreviation: Some("TJU".into()),
+                logo_url: None,
                 founded_year: Some(2015),
                 description: Some("Mock team description".into()),
                 members: vec![
@@ -132,6 +133,7 @@ impl DataSource for MockDataSource {
                 name_en: Some("SJTU".into()),
                 university: "上海交通大学".into(),
                 abbreviation: Some("SJTU".into()),
+                logo_url: None,
                 founded_year: Some(2016),
                 description: None,
                 members: vec![MemberInput {

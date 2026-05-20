@@ -59,7 +59,7 @@ export function StatsPage() {
     {
       header: "Rating",
       render: (row) => (
-        <span className="font-mono">{row.rating.toFixed(1)}</span>
+        <span className="font-mono">{row.rating.toFixed(2)}</span>
       ),
       className: "w-24 text-right",
     },

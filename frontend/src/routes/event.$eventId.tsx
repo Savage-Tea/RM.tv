@@ -6,12 +6,13 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { TeamLogo } from "@/components/shared/TeamLogo";
 import { StandingsTable } from "@/components/events/StandingsTable";
 import { StageMatches } from "@/components/events/StageMatches";
+import { SwissBracket } from "@/components/events/SwissBracket";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { STAGE_FORMAT_LABELS } from "@/types";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 export function EventDetailPage() {
   const { eventId } = useParams({ from: "/events/$eventId" });
@@ -52,6 +53,29 @@ export function EventDetailPage() {
   if (!selectedStageId && e.stages.length > 0) {
     setSelectedStageId(e.stages[0].id);
   }
+
+  // Filter entries: when a stage is selected with match data, show only
+  // teams participating in that stage; otherwise show all entries.
+  const stageTeamIds = useMemo(() => {
+    if (!stageOverview.data) return null;
+    const ids = new Set<string>();
+    for (const rd of stageOverview.data.rounds) {
+      for (const m of rd.matches) {
+        ids.add(m.team_a.id);
+        ids.add(m.team_b.id);
+      }
+    }
+    return ids.size > 0 ? ids : null;
+  }, [stageOverview.data]);
+
+  const displayEntries = stageTeamIds
+    ? e.entries.filter((entry) => stageTeamIds.has(entry.team_id))
+    : e.entries;
+
+  const selectedStage = e.stages.find((s) => s.id === selectedStageId);
+  const zoneLabel = selectedStage
+    ? selectedStage.name.replace(/[AB]组$/, "").replace(/赛区.*$/, "赛区")
+    : null;
 
   return (
     <div className="space-y-6">
@@ -106,16 +130,32 @@ export function EventDetailPage() {
 
       {stageOverview.data && (
         <div className="space-y-6">
-          <StandingsTable overview={stageOverview.data} />
-          <StageMatches rounds={stageOverview.data.rounds} />
+          {stageOverview.data.stage_format !== "swiss" && stageOverview.data.stage_format !== "single_elim" && (
+            <StandingsTable overview={stageOverview.data} />
+          )}
+          {(stageOverview.data.stage_format === "swiss" || stageOverview.data.stage_format === "single_elim") ? (
+            <SwissBracket
+              rounds={stageOverview.data.rounds}
+              standings={stageOverview.data.standings}
+              format={stageOverview.data.stage_format}
+              advanceLabel={selectedStage?.name.includes("全国赛名额争夺") ? "晋级全国赛" : undefined}
+              eliminateLabel={selectedStage?.name.includes("全国赛名额争夺") ? "晋级复活赛" : undefined}
+              minWinsForAdvance={selectedStage?.name.includes("全国赛名额争夺") ? 2 : undefined}
+            />
+          ) : (
+            <StageMatches
+              rounds={stageOverview.data.rounds}
+              standings={stageOverview.data.standings}
+            />
+          )}
         </div>
       )}
 
       {/* Team entries */}
-      {e.entries.length > 0 && (
+      {displayEntries.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold mb-3">
-            参赛战队 ({e.entries.length})
+            参赛战队 ({displayEntries.length}{zoneLabel ? ` · ${zoneLabel}` : ""})
           </h2>
           <Table>
             <TableHeader>
@@ -126,7 +166,7 @@ export function EventDetailPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {e.entries.map((entry) => (
+              {displayEntries.map((entry) => (
                 <TableRow key={entry.id}>
                   <TableCell className="text-muted-foreground">
                     {entry.seed ?? "-"}

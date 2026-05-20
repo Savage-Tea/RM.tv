@@ -100,10 +100,15 @@ export interface MatchSummary {
   id: string;
   event_id: string;
   event_name: string;
+  stage_name?: string;
   team_a_id: string;
   team_a_name: string;
+  team_a_university: string;
+  team_a_logo_url?: string;
   team_b_id: string;
   team_b_name: string;
+  team_b_university: string;
+  team_b_logo_url?: string;
   score_a?: number;
   score_b?: number;
   format: string;
@@ -122,6 +127,10 @@ export interface MatchDetail {
   team_b_name?: string;
   team_a_abbreviation?: string;
   team_b_abbreviation?: string;
+  team_a_university?: string;
+  team_b_university?: string;
+  team_a_logo_url?: string;
+  team_b_logo_url?: string;
   score_a?: number;
   score_b?: number;
   format: string;
@@ -234,6 +243,8 @@ export interface StageStandingsRow {
   team_id: string;
   team_name: string;
   team_abbreviation?: string;
+  university: string;
+  logo_url?: string;
   wins: number;
   losses: number;
   draws: number;
@@ -246,13 +257,18 @@ export interface StageStandingsRow {
 
 export interface StageMatchCard {
   match_id: string;
-  team_a: { id: string; name: string; abbreviation?: string };
-  team_b: { id: string; name: string; abbreviation?: string };
+  team_a: { id: string; name: string; abbreviation?: string; university: string; logo_url?: string };
+  team_b: { id: string; name: string; abbreviation?: string; university: string; logo_url?: string };
   score_a?: number;
   score_b?: number;
   status: string;
   scheduled_at?: string;
+  format?: string;
+  group_name?: string;
+  bracket_record: string;
+  bracket_record_b: string;
 }
+
 
 export interface StageRoundMatches {
   round: number;

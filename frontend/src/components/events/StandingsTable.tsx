@@ -90,6 +90,7 @@ export function StandingsTable({ overview }: { overview: StageOverview }) {
                             {s.team_name}
                           </span>
                         )}
+                        <div className="text-xs text-muted-foreground">{s.university}</div>
                       </TableCell>
                       <TableCell className="text-center font-mono text-sm">
                         {s.record}
@@ -128,6 +129,7 @@ export function StandingsTable({ overview }: { overview: StageOverview }) {
                       >
                         {s.team_name}
                       </Link>
+                      <div className="text-xs text-muted-foreground">{s.university}</div>
                     </TableCell>
                     <TableCell className="text-center font-mono text-sm">
                       {s.record}

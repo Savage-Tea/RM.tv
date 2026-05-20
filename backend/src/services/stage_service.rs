@@ -12,6 +12,8 @@ pub struct StageStandingsRow {
     pub team_id: Uuid,
     pub team_name: String,
     pub team_abbreviation: Option<String>,
+    pub university: String,
+    pub logo_url: Option<String>,
     pub wins: i32,
     pub losses: i32,
     pub draws: i32,
@@ -39,6 +41,12 @@ pub struct StageMatchCard {
     pub score_b: Option<i32>,
     pub status: String,
     pub scheduled_at: Option<String>,
+    pub format: Option<String>,
+    pub group_name: Option<String>,
+    /// Pre-match record of team_a (e.g. "2:1")
+    pub bracket_record: String,
+    /// Pre-match record of team_b
+    pub bracket_record_b: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,6 +54,8 @@ pub struct TeamInfo {
     pub id: Uuid,
     pub name: String,
     pub abbreviation: Option<String>,
+    pub university: String,
+    pub logo_url: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,14 +79,20 @@ struct MatchRow {
     team_a_id: Uuid,
     team_a_name: String,
     team_a_abbr: Option<String>,
+    team_a_university: String,
+    team_a_logo_url: Option<String>,
     team_b_id: Uuid,
     team_b_name: String,
     team_b_abbr: Option<String>,
+    team_b_university: String,
+    team_b_logo_url: Option<String>,
     score_a: Option<i32>,
     score_b: Option<i32>,
     status: String,
     round: Option<i32>,
     scheduled_at: Option<String>,
+    format: Option<String>,
+    group_name: Option<String>,
 }
 
 /// Auto-detect Swiss vs Round Robin from match round numbering.
@@ -130,12 +146,14 @@ pub async fn get_stage_overview(pool: &PgPool, stage_id: Uuid) -> Result<StageOv
     let matches: Vec<MatchRow> = sqlx::query_as(
         r#"SELECT
             m.id,
-            m.team_a_id, ta.name as team_a_name, ta.abbreviation as team_a_abbr,
-            m.team_b_id, tb.name as team_b_name, tb.abbreviation as team_b_abbr,
+            m.team_a_id, ta.name as team_a_name, ta.abbreviation as team_a_abbr, ta.university as team_a_university, ta.logo_url as team_a_logo_url,
+            m.team_b_id, tb.name as team_b_name, tb.abbreviation as team_b_abbr, tb.university as team_b_university, tb.logo_url as team_b_logo_url,
             m.score_a, m.score_b,
             m.status::text as status,
             m.round,
-            to_char(m.scheduled_at, 'YYYY-MM-DD HH24:MI') as scheduled_at
+            to_char(m.scheduled_at AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM-DD HH24:MI') as scheduled_at,
+            m.format::text as format,
+            m.group_name
         FROM matches m
         JOIN teams ta ON m.team_a_id = ta.id
         JOIN teams tb ON m.team_b_id = tb.id
@@ -155,7 +173,7 @@ pub async fn get_stage_overview(pool: &PgPool, stage_id: Uuid) -> Result<StageOv
     let standings = compute_standings_from_matches(&detected_format, &matches);
 
     // Group matches by round for display
-    let rounds = group_matches_by_round(&matches);
+    let rounds = group_matches_by_round(&matches, &detected_format);
 
     Ok(StageOverview {
         stage_id,
@@ -174,16 +192,18 @@ fn compute_standings_from_matches(
     stage_format: &str,
     matches: &[MatchRow],
 ) -> Vec<StageStandingsRow> {
-    // Build team info lookup
-    let mut team_names: std::collections::HashMap<Uuid, (&str, Option<&str>)> =
-        std::collections::HashMap::new();
+    // Build team info lookup: (name, abbreviation, university)
+    let mut team_names: std::collections::HashMap<
+        Uuid,
+        (&str, Option<&str>, &str, Option<&str>),
+    > = std::collections::HashMap::new();
     for m in matches {
         team_names
             .entry(m.team_a_id)
-            .or_insert((&m.team_a_name, m.team_a_abbr.as_deref()));
+            .or_insert((&m.team_a_name, m.team_a_abbr.as_deref(), &m.team_a_university, m.team_a_logo_url.as_deref()));
         team_names
             .entry(m.team_b_id)
-            .or_insert((&m.team_b_name, m.team_b_abbr.as_deref()));
+            .or_insert((&m.team_b_name, m.team_b_abbr.as_deref(), &m.team_b_university, m.team_b_logo_url.as_deref()));
     }
 
     if stage_format == "swiss" {
@@ -298,12 +318,14 @@ fn compute_standings_from_matches(
             .iter()
             .enumerate()
             .map(|(i, s)| {
-                let (name, abbr) = team_names.get(&s.team_id).copied().unwrap_or(("?", None));
+                let (name, abbr, uni, logo) = team_names.get(&s.team_id).copied().unwrap_or(("?", None, "?", None));
                 StageStandingsRow {
                     rank: (i + 1) as i32,
                     team_id: s.team_id,
                     team_name: name.to_string(),
                     team_abbreviation: abbr.map(|a| a.to_string()),
+                    university: uni.to_string(),
+                    logo_url: logo.map(|l| l.to_string()),
                     wins: s.wins,
                     losses: s.losses,
                     draws: 0,
@@ -334,12 +356,14 @@ fn compute_standings_from_matches(
             .iter()
             .enumerate()
             .map(|(i, s)| {
-                let (name, abbr) = team_names.get(&s.team_id).copied().unwrap_or(("?", None));
+                let (name, abbr, uni, logo) = team_names.get(&s.team_id).copied().unwrap_or(("?", None, "?", None));
                 StageStandingsRow {
                     rank: (i + 1) as i32,
                     team_id: s.team_id,
                     team_name: name.to_string(),
                     team_abbreviation: abbr.map(|a| a.to_string()),
+                    university: uni.to_string(),
+                    logo_url: logo.map(|l| l.to_string()),
                     wins: s.wins,
                     losses: s.losses,
                     draws: s.draws,
@@ -354,7 +378,11 @@ fn compute_standings_from_matches(
     }
 }
 
-fn group_matches_by_round(matches: &[MatchRow]) -> Vec<StageRoundMatches> {
+fn group_matches_by_round(matches: &[MatchRow], stage_format: &str) -> Vec<StageRoundMatches> {
+    if matches.is_empty() {
+        return vec![];
+    }
+
     // Collect unique round numbers in order
     let mut round_order: Vec<i32> = Vec::new();
     let mut seen = std::collections::HashSet::new();
@@ -366,79 +394,143 @@ fn group_matches_by_round(matches: &[MatchRow]) -> Vec<StageRoundMatches> {
     }
     round_order.sort();
 
-    // Detect Swiss-style interleaving: round numbers jump by >8 between
-    // batches. E.g., Group A rounds: 1-8, 17-24, 33-40, 49-54.
-    let is_swiss = round_order.len() > 1 && round_order.windows(2).any(|w| w[1] - w[0] > 8);
+    // Detect Swiss: round numbers jump by >8 between batches, or stage_format is swiss
+    let is_swiss = stage_format == "swiss"
+        || (round_order.len() > 1 && round_order.windows(2).any(|w| w[1] - w[0] > 8));
 
-    if !is_swiss {
-        // Round Robin: each round is a separate display group
+    if !is_swiss && stage_format != "single_elim" {
+        // Round Robin: simple grouping by round number
         return round_order
             .iter()
-            .map(|&round_num| StageRoundMatches {
-                round: round_num,
-                label: format!("Round {}", round_num),
-                matches: collect_round_matches(matches, &[round_num]),
+            .map(|&round_num| {
+                let cards: Vec<StageMatchCard> = matches
+                    .iter()
+                    .filter(|m| m.round.unwrap_or(1) == round_num)
+                    .map(|m| build_match_card(m, "0:0", "0:0"))
+                    .collect();
+                StageRoundMatches {
+                    round: round_num,
+                    label: format!("Round {}", round_num),
+                    matches: cards,
+                }
             })
             .collect();
     }
 
-    // Swiss: batch consecutive round numbers into Swiss rounds
-    let mut batches: Vec<Vec<i32>> = Vec::new();
-    let mut current_batch: Vec<i32> = Vec::new();
+    if stage_format == "single_elim" {
+        // Single elimination: label rounds by match count
+        return round_order
+            .iter()
+            .map(|&round_num| {
+                let cards: Vec<StageMatchCard> = matches
+                    .iter()
+                    .filter(|m| m.round.unwrap_or(1) == round_num)
+                    .map(|m| build_match_card(m, "0:0", "0:0"))
+                    .collect();
+                let label = match (round_num, cards.len()) {
+                    (_, 8) => "16进8".to_string(),
+                    (_, 4) => "8进4".to_string(),
+                    (3, 2) => "半决赛".to_string(),
+                    (4, _) | (_, 1) => "决赛".to_string(),
+                    (_, 2) => "半决赛".to_string(),
+                    n => format!("Round {} ({} matches)", round_num, n.1),
+                };
+                StageRoundMatches {
+                    round: round_num,
+                    label,
+                    matches: cards,
+                }
+            })
+            .collect();
+    }
 
-    for &r in &round_order {
-        if current_batch.is_empty() || r - current_batch.last().unwrap() <= 8 {
-            current_batch.push(r);
+    // ── Swiss: process linearly by round number ──────────────────
+    use std::collections::HashMap;
+
+    // Sort matches by round number
+    let mut sorted: Vec<&MatchRow> = matches.iter().collect();
+    sorted.sort_by_key(|m| m.round.unwrap_or(1));
+
+    // Track running W-L for each team
+    let mut records: HashMap<Uuid, (i32, i32)> = HashMap::new();
+    // display_round_number → list of match cards
+    let mut round_map: HashMap<i32, Vec<StageMatchCard>> = HashMap::new();
+    let mut round_order_display: Vec<i32> = Vec::new();
+
+    for m in &sorted {
+        let (aw, al) = records.get(&m.team_a_id).copied().unwrap_or((0, 0));
+        let (bw, bl) = records.get(&m.team_b_id).copied().unwrap_or((0, 0));
+
+        let bracket_record = format!("{}:{}", aw, al);
+        let bracket_record_b = format!("{}:{}", bw, bl);
+        // Swiss display round = total games played + 1
+        let display_round = aw + al + 1;
+
+        let card = build_match_card(m, &bracket_record, &bracket_record_b);
+
+        if !round_map.contains_key(&display_round) {
+            round_order_display.push(display_round);
+        }
+        round_map
+            .entry(display_round)
+            .or_insert_with(Vec::new)
+            .push(card);
+
+        // Update running records
+        if m.status == "finished" {
+            if let (Some(sa), Some(sb)) = (m.score_a, m.score_b) {
+                if sa > sb {
+                    records.insert(m.team_a_id, (aw + 1, al));
+                    records.insert(m.team_b_id, (bw, bl + 1));
+                } else if sb > sa {
+                    records.insert(m.team_a_id, (aw, al + 1));
+                    records.insert(m.team_b_id, (bw + 1, bl));
+                }
+            }
         } else {
-            batches.push(std::mem::take(&mut current_batch));
-            current_batch.push(r);
+            // For unplayed matches, register both teams so they exist in records
+            records.entry(m.team_a_id).or_insert((aw, al));
+            records.entry(m.team_b_id).or_insert((bw, bl));
         }
     }
-    if !current_batch.is_empty() {
-        batches.push(current_batch);
-    }
 
-    batches
-        .iter()
-        .enumerate()
-        .map(|(i, batch)| StageRoundMatches {
-            round: batch[0], // use first round num as identifier
-            label: format!("Swiss Round {}", i + 1),
-            matches: collect_round_matches(matches, batch),
+    round_order_display.sort();
+    round_order_display
+        .into_iter()
+        .map(|dr| StageRoundMatches {
+            round: dr,
+            label: format!("Swiss Round {}", dr),
+            matches: round_map.remove(&dr).unwrap_or_default(),
         })
         .collect()
 }
 
-fn collect_round_matches(matches: &[MatchRow], rounds: &[i32]) -> Vec<StageMatchCard> {
-    let mut result: Vec<StageMatchCard> = matches
-        .iter()
-        .filter(|m| rounds.contains(&m.round.unwrap_or(1)))
-        .map(|m| StageMatchCard {
-            match_id: m.id,
-            team_a: TeamInfo {
-                id: m.team_a_id,
-                name: m.team_a_name.clone(),
-                abbreviation: m.team_a_abbr.clone(),
-            },
-            team_b: TeamInfo {
-                id: m.team_b_id,
-                name: m.team_b_name.clone(),
-                abbreviation: m.team_b_abbr.clone(),
-            },
-            score_a: m.score_a,
-            score_b: m.score_b,
-            status: m.status.clone(),
-            scheduled_at: m.scheduled_at.clone(),
-        })
-        .collect();
-    result.sort_by_key(|m| {
-        matches
-            .iter()
-            .find(|mr| mr.id == m.match_id)
-            .and_then(|mr| mr.round)
-            .unwrap_or(1)
-    });
-    result
+fn build_match_card(m: &MatchRow, bracket_record: &str, bracket_record_b: &str) -> StageMatchCard {
+    StageMatchCard {
+        match_id: m.id,
+        team_a: TeamInfo {
+            id: m.team_a_id,
+            name: m.team_a_name.clone(),
+            abbreviation: m.team_a_abbr.clone(),
+            university: m.team_a_university.clone(),
+            logo_url: m.team_a_logo_url.clone(),
+        },
+        team_b: TeamInfo {
+            id: m.team_b_id,
+            name: m.team_b_name.clone(),
+            abbreviation: m.team_b_abbr.clone(),
+            university: m.team_b_university.clone(),
+            logo_url: m.team_b_logo_url.clone(),
+        },
+        score_a: m.score_a,
+        score_b: m.score_b,
+        status: m.status.clone(),
+        scheduled_at: m.scheduled_at.clone(),
+        format: m.format.clone(),
+        group_name: m.group_name.clone(),
+        bracket_record: bracket_record.to_string(),
+        bracket_record_b: bracket_record_b.to_string(),
+    }
 }
 
 #[cfg(test)]

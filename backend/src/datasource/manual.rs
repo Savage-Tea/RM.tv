@@ -62,14 +62,14 @@ impl DataSource for ManualSource {
     }
 
     async fn fetch_teams(&self) -> Result<Vec<TeamInput>, anyhow::Error> {
-        let teams: Vec<(Uuid, String, Option<String>, String, Option<String>, Option<i32>, Option<String>)> = sqlx::query_as(
-            "SELECT id, name, name_en, university, abbreviation, founded_year, description FROM teams"
+        let teams: Vec<(Uuid, String, Option<String>, String, Option<String>, Option<String>, Option<i32>, Option<String>)> = sqlx::query_as(
+            "SELECT id, name, name_en, university, abbreviation, logo_url, founded_year, description FROM teams"
         )
         .fetch_all(&self.pool)
         .await?;
 
         let mut result = Vec::new();
-        for (id, name, name_en, university, abbreviation, founded_year, description) in teams {
+        for (id, name, name_en, university, abbreviation, logo_url, founded_year, description) in teams {
             let members: Vec<(String, String, Option<i32>)> = sqlx::query_as(
                 "SELECT name, role, joined_year FROM team_members WHERE team_id = $1 AND is_active = true"
             )
@@ -82,6 +82,7 @@ impl DataSource for ManualSource {
                 name_en,
                 university,
                 abbreviation,
+                logo_url,
                 founded_year,
                 description,
                 members: members

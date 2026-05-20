@@ -3,6 +3,7 @@ use crate::models::{
     MatchSummary, MemberRobotRole, PaginatedResponse, Team, TeamDetail, TeamMember,
     TeamMemberWithRoles, TeamRobotRating,
 };
+use crate::services::rating_service::display_rating;
 use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -47,7 +48,7 @@ pub async fn list_teams(
         .await?;
 
         let teams: Vec<Team> = sqlx::query_as(
-            "SELECT * FROM teams WHERE name ILIKE $1 OR name_en ILIKE $1 OR university ILIKE $1 ORDER BY name LIMIT $2 OFFSET $3"
+            "SELECT * FROM teams WHERE name ILIKE $1 OR name_en ILIKE $1 OR university ILIKE $1 ORDER BY university, name LIMIT $2 OFFSET $3"
         )
         .bind(&pattern)
         .bind(per_page)
@@ -62,7 +63,7 @@ pub async fn list_teams(
             .await?;
 
         let teams: Vec<Team> =
-            sqlx::query_as("SELECT * FROM teams ORDER BY name LIMIT $1 OFFSET $2")
+            sqlx::query_as("SELECT * FROM teams ORDER BY university, name LIMIT $1 OFFSET $2")
                 .bind(per_page)
                 .bind(offset)
                 .fetch_all(pool)
@@ -102,7 +103,7 @@ pub async fn get_team(pool: &PgPool, id: Uuid) -> Result<TeamDetail, AppError> {
         });
     }
 
-    let robot_ratings: Vec<TeamRobotRating> = sqlx::query_as(
+    let mut robot_ratings: Vec<TeamRobotRating> = sqlx::query_as(
         r#"SELECT rr.robot_type::text AS robot_type, rr.rating::float8 AS rating, rr.matches_played
            FROM robot_rating rr
            WHERE rr.team_id = $1 AND rr.season = '2026'
@@ -112,16 +113,28 @@ pub async fn get_team(pool: &PgPool, id: Uuid) -> Result<TeamDetail, AppError> {
     .fetch_all(pool)
     .await?;
 
+    for r in &mut robot_ratings {
+        if let (Some(raw), Some(mp)) = (r.rating, r.matches_played) {
+            r.rating = Some(display_rating(raw, mp));
+        }
+    }
+
     let recent_matches: Vec<MatchSummary> = sqlx::query_as(
         r#"SELECT m.id, m.event_id, e.name as event_name,
+           es.name as stage_name,
            m.team_a_id, ta.name as team_a_name,
            m.team_b_id, tb.name as team_b_name,
+           ta.university as team_a_university,
+           tb.university as team_b_university,
+           ta.logo_url as team_a_logo_url,
+           tb.logo_url as team_b_logo_url,
            m.score_a, m.score_b, m.format::text AS format, m.status::text AS status,
            m.scheduled_at, m.group_name
            FROM matches m
            JOIN teams ta ON m.team_a_id = ta.id
            JOIN teams tb ON m.team_b_id = tb.id
            JOIN events e ON m.event_id = e.id
+           LEFT JOIN event_stages es ON m.stage_id = es.id
            WHERE m.team_a_id = $1 OR m.team_b_id = $1
            ORDER BY m.scheduled_at DESC NULLS LAST
            LIMIT 10"#,

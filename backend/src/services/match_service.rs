@@ -38,6 +38,9 @@ pub struct ListMatchesParams<'a> {
     pub stage_id: Option<Uuid>,
     pub team_id: Option<Uuid>,
     pub status: Option<&'a str>,
+    pub season: Option<&'a str>,
+    pub stage_type: Option<&'a str>,
+    pub search: Option<&'a str>,
     pub page: i64,
     pub per_page: i64,
     pub sort: &'a str,
@@ -53,6 +56,9 @@ pub async fn list_matches(
         stage_id,
         team_id,
         status,
+        season,
+        stage_type,
+        search,
         page,
         per_page,
         sort,
@@ -72,37 +78,58 @@ pub async fn list_matches(
         "DESC"
     };
 
+    let search_pattern = search.map(|s| format!("%{}%", s));
+
     let query = format!(
         r#"SELECT m.id, m.event_id, e.name as event_name,
+           es.name as stage_name,
            m.team_a_id, ta.name as team_a_name,
            m.team_b_id, tb.name as team_b_name,
+           ta.university as team_a_university,
+           tb.university as team_b_university,
+           ta.logo_url as team_a_logo_url,
+           tb.logo_url as team_b_logo_url,
            m.score_a, m.score_b, m.format::text AS format, m.status::text AS status,
            m.scheduled_at, m.group_name
            FROM matches m
            JOIN teams ta ON m.team_a_id = ta.id
            JOIN teams tb ON m.team_b_id = tb.id
            JOIN events e ON m.event_id = e.id
+           LEFT JOIN event_stages es ON m.stage_id = es.id
            WHERE ($1::uuid IS NULL OR m.event_id = $1)
              AND ($2::uuid IS NULL OR m.stage_id = $2)
              AND ($3::uuid IS NULL OR m.team_a_id = $3 OR m.team_b_id = $3)
              AND ($4::text IS NULL OR m.status::text = $4)
-           ORDER BY {} {}
-           LIMIT $5 OFFSET $6"#,
+             AND ($5::text IS NULL OR e.season = $5)
+             AND ($6::text IS NULL OR es.stage_type::text = $6)
+             AND ($7::text IS NULL OR ta.name ILIKE $7 OR ta.university ILIKE $7 OR tb.name ILIKE $7 OR tb.university ILIKE $7)
+           ORDER BY {} {} NULLS LAST
+           LIMIT $8 OFFSET $9"#,
         sort_col, sort_order
     );
 
     let total: (i64,) = sqlx::query_as(
         r#"SELECT COUNT(*)
            FROM matches m
+           JOIN events e ON m.event_id = e.id
+           LEFT JOIN event_stages es ON m.stage_id = es.id
+           JOIN teams ta ON m.team_a_id = ta.id
+           JOIN teams tb ON m.team_b_id = tb.id
            WHERE ($1::uuid IS NULL OR m.event_id = $1)
              AND ($2::uuid IS NULL OR m.stage_id = $2)
              AND ($3::uuid IS NULL OR m.team_a_id = $3 OR m.team_b_id = $3)
-             AND ($4::text IS NULL OR m.status::text = $4)"#,
+             AND ($4::text IS NULL OR m.status::text = $4)
+             AND ($5::text IS NULL OR e.season = $5)
+             AND ($6::text IS NULL OR es.stage_type::text = $6)
+             AND ($7::text IS NULL OR ta.name ILIKE $7 OR ta.university ILIKE $7 OR tb.name ILIKE $7 OR tb.university ILIKE $7)"#,
     )
     .bind(event_id)
     .bind(stage_id)
     .bind(team_id)
     .bind(status)
+    .bind(season)
+    .bind(stage_type)
+    .bind(search_pattern.as_deref())
     .fetch_one(pool)
     .await?;
 
@@ -111,6 +138,9 @@ pub async fn list_matches(
         .bind(stage_id)
         .bind(team_id)
         .bind(status)
+        .bind(season)
+        .bind(stage_type)
+        .bind(search_pattern.as_deref())
         .bind(per_page)
         .bind(offset)
         .fetch_all(pool)
@@ -130,6 +160,10 @@ struct MatchWithTeams {
     team_b_name: String,
     team_a_abbreviation: Option<String>,
     team_b_abbreviation: Option<String>,
+    team_a_university: String,
+    team_b_university: String,
+    team_a_logo_url: Option<String>,
+    team_b_logo_url: Option<String>,
     score_a: Option<i32>,
     score_b: Option<i32>,
     format: String,
@@ -151,6 +185,10 @@ pub async fn get_match(pool: &PgPool, id: Uuid) -> Result<MatchDetail, AppError>
            ta.name as team_a_name, tb.name as team_b_name,
            ta.abbreviation as team_a_abbreviation,
            tb.abbreviation as team_b_abbreviation,
+           ta.university as team_a_university,
+           tb.university as team_b_university,
+           ta.logo_url as team_a_logo_url,
+           tb.logo_url as team_b_logo_url,
            m.score_a, m.score_b,
            m.format::text AS format, m.status::text AS status,
            m.scheduled_at, m.started_at, m.finished_at,
@@ -215,6 +253,10 @@ pub async fn get_match(pool: &PgPool, id: Uuid) -> Result<MatchDetail, AppError>
         team_b_name: row.team_b_name,
         team_a_abbreviation: row.team_a_abbreviation,
         team_b_abbreviation: row.team_b_abbreviation,
+        team_a_university: row.team_a_university,
+        team_b_university: row.team_b_university,
+        team_a_logo_url: row.team_a_logo_url,
+        team_b_logo_url: row.team_b_logo_url,
         maps,
         participants,
         robot_stats,
