@@ -95,11 +95,13 @@ export function TeamDetailPage() {
               const oppUni = side === "a" ? m.team_b_university : m.team_a_university;
               const oppLogo = side === "a" ? m.team_b_logo_url : m.team_a_logo_url;
               const isScheduled = m.status === "scheduled";
+              const scoreA = m.score_a ?? 0;
+              const scoreB = m.score_b ?? 0;
               const finished = m.score_a != null && m.score_b != null;
               const isWinner = finished
-                ? (side === "a" && m.score_a > m.score_b) || (side === "b" && m.score_b > m.score_a)
+                ? (side === "a" && scoreA > scoreB) || (side === "b" && scoreB > scoreA)
                 : false;
-              const isDraw = finished && m.score_a === m.score_b;
+              const isDraw = finished && scoreA === scoreB;
 
               return (
                 <Link

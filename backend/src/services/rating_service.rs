@@ -5,11 +5,7 @@ use uuid::Uuid;
 /// Per-match rating is computed from CDN per-match averages — no additional
 /// shrinkage needed.  For teams with zero matches we return the prior (1.0).
 pub fn display_rating(raw_rating: f64, matches_played: i32) -> f64 {
-    if matches_played == 0 {
-        1.0
-    } else {
-        raw_rating
-    }
+    if matches_played == 0 { 1.0 } else { raw_rating }
 }
 
 // ── Per-type baseline averages (computed from 96-team CDN data, 2026 season) ──
@@ -289,9 +285,9 @@ pub fn compute_robot_rating_from_kda(
 /// Dimensions: assembly economy (55%), success count (30%), difficulty (15%).
 #[allow(dead_code)]
 pub fn compute_engineer_rating(
-    assemble_econ: f64,    // eaAssembleEcon — economic value from assembly
-    assemble_succ: f64,    // eaAssembleSuccCnt — successful assemblies per match
-    assemble_diff: f64,    // avgAssembleDiff — difficulty of assembly targets
+    assemble_econ: f64, // eaAssembleEcon — economic value from assembly
+    assemble_succ: f64, // eaAssembleSuccCnt — successful assemblies per match
+    assemble_diff: f64, // avgAssembleDiff — difficulty of assembly targets
 ) -> f64 {
     // CDN baselines (32 teams with actual data, 2026 season)
     const BL_ECON: f64 = 1377.49;
@@ -314,9 +310,9 @@ pub fn compute_engineer_rating(
 /// Dimensions: marker time (50%), counter time (30%), parse success (20%).
 #[allow(dead_code)]
 pub fn compute_radar_rating(
-    marker_time: f64,      // eaRadarMarkerTime — seconds of target marking
-    counter_time: f64,     // eaRadarCounterTime — seconds of counter-detection
-    parse_succ: f64,       // eaRadarParseSuccCnt — successful parses per match
+    marker_time: f64,  // eaRadarMarkerTime — seconds of target marking
+    counter_time: f64, // eaRadarCounterTime — seconds of counter-detection
+    parse_succ: f64,   // eaRadarParseSuccCnt — successful parses per match
 ) -> f64 {
     // CDN baselines (27/14/8 teams respectively, 2026 season)
     const BL_MARKER: f64 = 417.61;
@@ -328,9 +324,21 @@ pub fn compute_radar_rating(
         return 1.0;
     }
 
-    let n_marker = if marker_time > 0.1 { marker_time / BL_MARKER.max(EPS) } else { 1.0 };
-    let n_counter = if counter_time > 0.1 { counter_time / BL_COUNTER.max(EPS) } else { 1.0 };
-    let n_parse = if parse_succ > 0.01 { parse_succ / BL_PARSE.max(EPS) } else { 1.0 };
+    let n_marker = if marker_time > 0.1 {
+        marker_time / BL_MARKER.max(EPS)
+    } else {
+        1.0
+    };
+    let n_counter = if counter_time > 0.1 {
+        counter_time / BL_COUNTER.max(EPS)
+    } else {
+        1.0
+    };
+    let n_parse = if parse_succ > 0.01 {
+        parse_succ / BL_PARSE.max(EPS)
+    } else {
+        1.0
+    };
 
     0.50 * n_marker + 0.30 * n_counter + 0.20 * n_parse
 }
@@ -340,15 +348,15 @@ pub fn compute_radar_rating(
 /// Difficulty multipliers for different dart target types.
 /// Higher weight = more rating reward for the same number of hits.
 #[allow(dead_code)]
-const DART_OUTPOST_WEIGHT: f64 = 1.0;   // 前哨站
+const DART_OUTPOST_WEIGHT: f64 = 1.0; // 前哨站
 #[allow(dead_code)]
-const DART_FIXED_WEIGHT: f64 = 1.0;     // 固定靶
+const DART_FIXED_WEIGHT: f64 = 1.0; // 固定靶
 #[allow(dead_code)]
-const DART_RD_FIX_WEIGHT: f64 = 2.0;     // 基地固定靶
+const DART_RD_FIX_WEIGHT: f64 = 2.0; // 基地固定靶
 #[allow(dead_code)]
-const DART_RD_MOVE_WEIGHT: f64 = 3.5;    // 基地移动靶（技术难度大）
+const DART_RD_MOVE_WEIGHT: f64 = 3.5; // 基地移动靶（技术难度大）
 #[allow(dead_code)]
-const DART_END_MOVE_WEIGHT: f64 = 5.0;   // 末端移动靶（技术难度极大）
+const DART_END_MOVE_WEIGHT: f64 = 5.0; // 末端移动靶（技术难度极大）
 
 /// Compute a weighted dart special score from individual CDN target counters.
 ///
@@ -356,11 +364,11 @@ const DART_END_MOVE_WEIGHT: f64 = 5.0;   // 末端移动靶（技术难度极大
 /// hitting a moving target at long range requires exceptional skill.
 #[allow(dead_code)]
 pub fn compute_dart_special(
-    outpost_cnt: f64,   // etDartOutpostCnt
-    fixed_cnt: f64,     // etDartFixedCnt
-    rd_fix_cnt: f64,    // etDartRDFixCnt
-    rd_move_cnt: f64,   // etDartRDMoveCnt
-    end_move_cnt: f64,  // etDartEndMoveCnt
+    outpost_cnt: f64,  // etDartOutpostCnt
+    fixed_cnt: f64,    // etDartFixedCnt
+    rd_fix_cnt: f64,   // etDartRDFixCnt
+    rd_move_cnt: f64,  // etDartRDMoveCnt
+    end_move_cnt: f64, // etDartEndMoveCnt
 ) -> f64 {
     outpost_cnt * DART_OUTPOST_WEIGHT
         + fixed_cnt * DART_FIXED_WEIGHT
@@ -641,12 +649,20 @@ mod tests {
 
         // Elite dart: some of everything including hard targets
         let elite = compute_dart_special(1.0, 10.0, 2.0, 3.0, 1.0);
-        assert!(elite > 25.0, "Elite dart with hard targets should be >25, got {}", elite);
+        assert!(
+            elite > 25.0,
+            "Elite dart with hard targets should be >25, got {}",
+            elite
+        );
     }
 
     #[test]
     fn test_dart_baseline_special() {
         let bl = dart_baseline_special();
-        assert!(bl > 3.0 && bl < 5.0, "Weighted dart baseline should be 3-5, got {}", bl);
+        assert!(
+            bl > 3.0 && bl < 5.0,
+            "Weighted dart baseline should be 3-5, got {}",
+            bl
+        );
     }
 }
