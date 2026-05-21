@@ -360,23 +360,6 @@ export interface TeamNode {
   label?: string; // e.g. "晋级全国总决赛", "晋级全国赛", "晋级复活赛"
 }
 
-interface ElimColumnLayout {
-  x: number;
-  header: string;
-  matchPositions: MatchPosition[];
-  totalHeight: number;
-}
-
-interface ElimResultGroup {
-  bracketRecord: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  teams: TeamNode[];
-  box: GroupBox;
-}
-
 interface ElimLayout {
   matchPositions: Map<string, MatchPosition>;
   columns: ColumnLayout[];
@@ -400,17 +383,8 @@ export function buildEliminationLayout(
   for (let di = 0; di < sorted.length; di++) {
     const rd = sorted[di];
     const colX = PADDING_LEFT + di * ROUND_STEP;
-    const matchCount = rd.matches.length;
-
-    // Calculate column height
-    const colContentH =
-      GROUP_PAD_Y * 2 + matchCount * CARD_HEIGHT + (matchCount - 1) * MATCH_GAP_Y;
 
     let cursorY = PADDING_TOP;
-    const boxX = colX;
-    const boxY = cursorY;
-    const boxW = CARD_WIDTH + GROUP_PAD_X * 2;
-    const boxH = colContentH;
 
     for (let i = 0; i < rd.matches.length; i++) {
       const m = rd.matches[i];
@@ -460,7 +434,6 @@ export function buildEliminationLayout(
       }
     }
 
-    cursorY = boxY + boxH + GROUP_GAP_Y;
   }
 
   // Build columns

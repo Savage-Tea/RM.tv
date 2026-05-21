@@ -193,17 +193,21 @@ fn compute_standings_from_matches(
     matches: &[MatchRow],
 ) -> Vec<StageStandingsRow> {
     // Build team info lookup: (name, abbreviation, university)
-    let mut team_names: std::collections::HashMap<
-        Uuid,
-        (&str, Option<&str>, &str, Option<&str>),
-    > = std::collections::HashMap::new();
+    let mut team_names: std::collections::HashMap<Uuid, (&str, Option<&str>, &str, Option<&str>)> =
+        std::collections::HashMap::new();
     for m in matches {
-        team_names
-            .entry(m.team_a_id)
-            .or_insert((&m.team_a_name, m.team_a_abbr.as_deref(), &m.team_a_university, m.team_a_logo_url.as_deref()));
-        team_names
-            .entry(m.team_b_id)
-            .or_insert((&m.team_b_name, m.team_b_abbr.as_deref(), &m.team_b_university, m.team_b_logo_url.as_deref()));
+        team_names.entry(m.team_a_id).or_insert((
+            &m.team_a_name,
+            m.team_a_abbr.as_deref(),
+            &m.team_a_university,
+            m.team_a_logo_url.as_deref(),
+        ));
+        team_names.entry(m.team_b_id).or_insert((
+            &m.team_b_name,
+            m.team_b_abbr.as_deref(),
+            &m.team_b_university,
+            m.team_b_logo_url.as_deref(),
+        ));
     }
 
     if stage_format == "swiss" {
@@ -317,7 +321,10 @@ fn compute_standings_from_matches(
             .iter()
             .enumerate()
             .map(|(i, s)| {
-                let (name, abbr, uni, logo) = team_names.get(&s.team_id).copied().unwrap_or(("?", None, "?", None));
+                let (name, abbr, uni, logo) = team_names
+                    .get(&s.team_id)
+                    .copied()
+                    .unwrap_or(("?", None, "?", None));
                 StageStandingsRow {
                     rank: (i + 1) as i32,
                     team_id: s.team_id,
@@ -355,7 +362,10 @@ fn compute_standings_from_matches(
             .iter()
             .enumerate()
             .map(|(i, s)| {
-                let (name, abbr, uni, logo) = team_names.get(&s.team_id).copied().unwrap_or(("?", None, "?", None));
+                let (name, abbr, uni, logo) = team_names
+                    .get(&s.team_id)
+                    .copied()
+                    .unwrap_or(("?", None, "?", None));
                 StageStandingsRow {
                     rank: (i + 1) as i32,
                     team_id: s.team_id,
