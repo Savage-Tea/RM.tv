@@ -221,7 +221,7 @@ def import_data(force=False):
             sid = stable_uuid("stage", zone_id, group_name)
             pg_exec(cur,
                 """INSERT INTO event_stages (id, event_id, name, stage_format, stage_type, order_index)
-                   VALUES (%s, %s, %s, 'round_robin', 'group', %s)
+                   VALUES (%s, %s, %s, 'swiss', 'group', %s)
                    ON CONFLICT DO NOTHING""",
                 (sid, event_id, stage_name, len(stage_ids) + 1))
             stage_ids[(zone_id, group_name)] = sid
