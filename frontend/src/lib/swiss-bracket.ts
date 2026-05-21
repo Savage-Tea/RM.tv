@@ -87,7 +87,8 @@ function binomial(n: number, k: number): number {
 
 /** Compute the expected Swiss bracket skeleton: round → record groups → match count */
 function swissSkeleton(numTeams: number): { record: string; matches: number }[][] {
-  const numRounds = Math.ceil(Math.log2(numTeams));
+  // Swiss needs 3 rounds for 8 teams, 5 rounds for 16 teams
+  const numRounds = Math.ceil(Math.log2(numTeams)) + (numTeams > 8 ? 1 : 0);
   const skeleton: { record: string; matches: number }[][] = [];
 
   for (let r = 1; r <= numRounds; r++) {
