@@ -375,27 +375,34 @@ export function buildBracketLayout(
       : sorted[0].matches.reduce((acc, m) => acc + (m.bracket_record === "0:0" ? 2 : 0), 0);
 
   if (numTeams >= 8 && (standings.length > 0 || sorted[0].label.includes("Swiss"))) {
-    const skeleton = swissSkeleton(numTeams);
-    const actualRounds = new Set(sorted.map((r) => r.round));
+    // Only expand if the stage is still in progress (not all matches finished)
+    const allFinished = sorted.every((r) =>
+      r.matches.every((m) => m.status === "finished"),
+    );
 
-    for (let ri = 0; ri < skeleton.length; ri++) {
-      const roundNum = ri + 1;
-      if (actualRounds.has(roundNum)) continue;
+    if (!allFinished) {
+      const skeleton = swissSkeleton(numTeams);
+      const actualRounds = new Set(sorted.map((r) => r.round));
 
-      const groups = skeleton[ri];
-      const placeholderMatches: StageMatchCard[] = [];
-      for (const g of groups) {
-        for (let j = 0; j < g.matches; j++) {
-          placeholderMatches.push(placeholderCard(roundNum, g.record, j));
+      for (let ri = 0; ri < skeleton.length; ri++) {
+        const roundNum = ri + 1;
+        if (actualRounds.has(roundNum)) continue;
+
+        const groups = skeleton[ri];
+        const placeholderMatches: StageMatchCard[] = [];
+        for (const g of groups) {
+          for (let j = 0; j < g.matches; j++) {
+            placeholderMatches.push(placeholderCard(roundNum, g.record, j));
+          }
         }
-      }
 
-      if (placeholderMatches.length > 0) {
-        sorted.push({
-          round: roundNum,
-          label: `Swiss Round ${roundNum}`,
-          matches: placeholderMatches,
-        });
+        if (placeholderMatches.length > 0) {
+          sorted.push({
+            round: roundNum,
+            label: `Swiss Round ${roundNum}`,
+            matches: placeholderMatches,
+          });
+        }
       }
     }
 
