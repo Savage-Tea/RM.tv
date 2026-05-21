@@ -52,7 +52,9 @@ function getCardBorder(mp: MatchPosition): { borderColor: string; boxShadow: str
 
 function getScoreLabel(mp: MatchPosition): { text: string; bg: string } {
   const m = mp.match;
+  const hasTeams = !!(m.team_a.id && m.team_a.name && m.team_b.id && m.team_b.name);
   if (m.status === "live") return { text: "LIVE", bg: LIVE_YELLOW };
+  if (!hasTeams) return { text: "待定", bg: MUTED_GRAY };
   if (m.status === "pending" || m.status === "scheduled") return { text: "VS", bg: MUTED_GRAY };
   if (m.score_a != null && m.score_b != null) {
     const bg = mp.winnerId === m.team_a.id ? WINNER_GREEN
@@ -106,13 +108,45 @@ function BracketMatchCard({
   const { borderColor, boxShadow, animation } = getCardBorder(mp);
   const scoreLabel = getScoreLabel(mp);
 
+  const hasTeamA = !!(m.team_a.id && m.team_a.name);
+  const hasTeamB = !!(m.team_b.id && m.team_b.name);
+  const isPlaceholder = !hasTeamA || !hasTeamB;
+
+  const cardContent = isPlaceholder ? (
+    <span className="text-sm text-muted-foreground mt-1">待定</span>
+  ) : (
+    <div className="flex items-center gap-2 mt-1">
+      <TeamCircle name={m.team_a.name} abbreviation={m.team_a.abbreviation}
+        logoUrl={m.team_a.logo_url} isWinner={mp.winnerId === m.team_a.id} size={34} />
+      <span className="text-xs font-semibold text-muted-foreground">VS</span>
+      <TeamCircle name={m.team_b.name} abbreviation={m.team_b.abbreviation}
+        logoUrl={m.team_b.logo_url} isWinner={mp.winnerId === m.team_b.id} size={34} />
+    </div>
+  );
+
+  const commonProps = {
+    className: "absolute flex flex-col items-center justify-center rounded-lg bg-card border-2 transition-transform hover:scale-105 hover:z-10",
+    style: {
+      left: mp.x, top: mp.y, width: CARD_WIDTH, height: CARD_HEIGHT,
+      borderColor, boxShadow, animation,
+    } as React.CSSProperties,
+  };
+
+  if (isPlaceholder) {
+    return (
+      <div {...commonProps}>
+        <div className="absolute flex items-center px-2 h-5 rounded-md text-xs font-bold text-white z-10"
+          style={{ top: -10, left: 12, backgroundColor: scoreLabel.bg }}>
+          {scoreLabel.text}
+        </div>
+        {cardContent}
+      </div>
+    );
+  }
+
   return (
     <Link to="/matches/$matchId" params={{ matchId: m.match_id }}
-      className="absolute flex flex-col items-center justify-center rounded-lg bg-card border-2 transition-transform hover:scale-105 hover:z-10"
-      style={{
-        left: mp.x, top: mp.y, width: CARD_WIDTH, height: CARD_HEIGHT,
-        borderColor, boxShadow, animation,
-      }}
+      {...commonProps}
       onMouseEnter={(e) => onMouseEnter(e, mp)}
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
@@ -122,13 +156,7 @@ function BracketMatchCard({
         style={{ top: -10, left: 12, backgroundColor: scoreLabel.bg }}>
         {scoreLabel.text}
       </div>
-      <div className="flex items-center gap-2 mt-1">
-        <TeamCircle name={m.team_a.name} abbreviation={m.team_a.abbreviation}
-          logoUrl={m.team_a.logo_url} isWinner={mp.winnerId === m.team_a.id} size={34} />
-        <span className="text-xs font-semibold text-muted-foreground">VS</span>
-        <TeamCircle name={m.team_b.name} abbreviation={m.team_b.abbreviation}
-          logoUrl={m.team_b.logo_url} isWinner={mp.winnerId === m.team_b.id} size={34} />
-      </div>
+      {cardContent}
     </Link>
   );
 }
