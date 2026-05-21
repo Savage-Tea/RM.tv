@@ -1,5 +1,6 @@
 import { Link, Outlet } from "@tanstack/react-router";
 import { Activity, Calendar, Users, BarChart3, Trophy } from "lucide-react";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 const NAV_ITEMS = [
   { to: "/", label: "首页", icon: Activity },
@@ -32,6 +33,9 @@ export function RootLayout() {
               </Link>
             ))}
           </nav>
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-6">

@@ -2,6 +2,7 @@ import { Link, Outlet } from "@tanstack/react-router";
 import { LayoutDashboard, Calendar, Swords, Users, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 const NAV_ITEMS = [
   { to: "/admin", label: "仪表盘", icon: LayoutDashboard, exact: true },
@@ -33,6 +34,9 @@ export function AdminLayout() {
             </Link>
           ))}
         </nav>
+        <div className="flex justify-center py-2 border-t border-border mt-2">
+          <ThemeToggle />
+        </div>
         <Link to="/" className="px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground flex items-center gap-2">
           <LogOut className="h-4 w-4" />
           返回前台
