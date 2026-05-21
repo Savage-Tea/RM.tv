@@ -193,7 +193,8 @@ fn compute_standings_from_matches(
     matches: &[MatchRow],
 ) -> Vec<StageStandingsRow> {
     // Build team info lookup: (name, abbreviation, university)
-    let mut team_names: std::collections::HashMap<Uuid, (&str, Option<&str>, &str, Option<&str>)> =
+    type TeamInfo<'a> = (&'a str, Option<&'a str>, &'a str, Option<&'a str>);
+    let mut team_names: std::collections::HashMap<Uuid, TeamInfo<'_>> =
         std::collections::HashMap::new();
     for m in matches {
         team_names.entry(m.team_a_id).or_insert((
@@ -480,10 +481,7 @@ fn group_matches_by_round(matches: &[MatchRow], stage_format: &str) -> Vec<Stage
         if !round_map.contains_key(&display_round) {
             round_order_display.push(display_round);
         }
-        round_map
-            .entry(display_round)
-            .or_insert_with(Vec::new)
-            .push(card);
+        round_map.entry(display_round).or_default().push(card);
 
         // Update running records
         if m.status == "finished" {
